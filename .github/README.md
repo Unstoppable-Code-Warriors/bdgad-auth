@@ -22,11 +22,6 @@ You need to configure the following secrets in your GitHub repository settings (
 ### Database Credentials
 
 -   `DATABASE_URL`: Complete database connection string (e.g., `postgresql://user:password@host:port/database`)
--   `DB_HOST`: Database host address
--   `DB_PORT`: Database port (usually 5432 for PostgreSQL)
--   `DB_NAME`: Database name
--   `DB_USER`: Database username
--   `DB_PASSWORD`: Database password
 
 ### System Admin Credentials
 
@@ -67,15 +62,10 @@ Create an environment file (e.g., `/home/user/app/.env`) on your VM with the fol
 ```env
 # Database
 DATABASE_URL=postgresql://user:password@host:port/database
-DB_HOST=your-db-host
-DB_PORT=5432
-DB_NAME=your-db-name
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
 
 # Auth
-NEXTAUTH_SECRET=your-nextauth-secret
-NEXTAUTH_URL=http://your-domain.com
+AUTH_SECRET=your-nextauth-secret
+AUTH_URL=http://your-domain.com
 
 # System Admin (optional, for runtime)
 SYSTEM_ADMIN_EMAIL=admin@example.com

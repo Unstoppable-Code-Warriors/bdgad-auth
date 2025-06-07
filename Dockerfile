@@ -51,8 +51,6 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-# Trust all hosts for Auth.js in Docker container
-ENV AUTH_TRUST_HOST=true
 
 # Start the Next.js application directly
 CMD ["node", "server.js"]

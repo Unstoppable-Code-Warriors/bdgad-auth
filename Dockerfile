@@ -9,7 +9,8 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+# Install all dependencies (including dev dependencies) for building
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -51,6 +52,8 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Trust all hosts for Auth.js in Docker container
+ENV AUTH_TRUST_HOST=true
 
 # Start the Next.js application directly
 CMD ["node", "server.js"]

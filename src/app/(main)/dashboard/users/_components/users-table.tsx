@@ -4,11 +4,18 @@ import { Button } from "@/components/ui/button"
 import { createHeader, DataTable } from "@/components/ui/datatable"
 import { GetUsersResult } from "@/lib/actions/users"
 import { FetchLimit } from "@/lib/constants"
-import { ColumnDef } from "@tanstack/react-table"
-import { Plus } from "lucide-react"
+import { ColumnDef, Row } from "@tanstack/react-table"
+import { MoreHorizontal, Plus } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDialog } from "@/hooks/use-dialog"
 import AddUserForm from "./add-user-form"
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import ConfirmDeleteUser from "./confirm-delete"
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
 	{
@@ -42,6 +49,25 @@ const UsersActions = () => {
 	)
 }
 
+const ActionsMenu = ({ row }: { row: Row<GetUsersResult["users"][0]> }) => {
+	const dialog = useDialog()
+
+	const openConfirmDeleteDialog = () => {
+		dialog.open({
+			title: "Delete User",
+			children: <ConfirmDeleteUser row={row} />,
+		})
+	}
+	return (
+		<>
+			<DropdownMenuItem>Edit</DropdownMenuItem>
+			<DropdownMenuItem onClick={openConfirmDeleteDialog}>
+				Delete
+			</DropdownMenuItem>
+		</>
+	)
+}
+
 const UsersTable = ({ users, total, totalPages }: GetUsersResult) => {
 	const searchParams = useSearchParams()
 	const router = useRouter()
@@ -62,6 +88,7 @@ const UsersTable = ({ users, total, totalPages }: GetUsersResult) => {
 			pageSize={FetchLimit.USERS}
 			onPageChange={handlePageChange}
 			actions={<UsersActions />}
+			rowActions={(row) => <ActionsMenu row={row} />}
 		/>
 	)
 }

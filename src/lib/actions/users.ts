@@ -2,7 +2,7 @@
 
 import { db } from "@/db/drizzle"
 import { users } from "@/db/schema"
-import { count, getTableColumns } from "drizzle-orm"
+import { count, eq, getTableColumns } from "drizzle-orm"
 import { withAuth } from "@/lib/utils/auth"
 import bcrypt from "bcryptjs"
 
@@ -66,3 +66,10 @@ async function createUserCore({
 
 export const createUser = withAuth(createUserCore)
 export type CreateUserResult = Awaited<ReturnType<typeof createUser>>
+
+async function deleteUserCore({ id }: { id: number }) {
+	await db.delete(users).where(eq(users.id, id))
+}
+
+export const deleteUser = withAuth(deleteUserCore)
+export type DeleteUserResult = Awaited<ReturnType<typeof deleteUser>>

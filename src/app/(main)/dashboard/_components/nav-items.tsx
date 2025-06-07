@@ -10,6 +10,7 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 export function NavItems({
 	items,
@@ -20,16 +21,22 @@ export function NavItems({
 		icon: LucideIcon
 	}[]
 }) {
-	const { isMobile } = useSidebar()
-
+	const pathname = usePathname()
 	return (
 		<SidebarGroup className="group-data-[collapsible=icon]:hidden">
 			{/* <SidebarGroupLabel>Projects</SidebarGroupLabel> */}
 			<SidebarMenu>
 				{items.map((item) => (
 					<SidebarMenuItem key={item.name}>
-						<SidebarMenuButton asChild>
-							<Link href={`/dashboard/${item.url}`}>
+						<SidebarMenuButton
+							asChild
+							variant={
+								pathname.startsWith(`/dashboard${item.url}`)
+									? "filled"
+									: "default"
+							}
+						>
+							<Link href={`/dashboard${item.url}`}>
 								<item.icon />
 								<span>{item.name}</span>
 							</Link>

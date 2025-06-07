@@ -15,6 +15,13 @@
       "when": 1749275073374,
       "tag": "0001_steady_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749277318462,
+      "tag": "0002_minor_bug",
+      "breakpoints": true
     }
   ]
 }

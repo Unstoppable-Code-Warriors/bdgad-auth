@@ -14,25 +14,24 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Session } from "next-auth"
-const data = {
-	items: [
-		{
-			name: "Users",
-			url: "/users",
-			icon: Users,
-		},
-		{
-			name: "Roles",
-			url: "/roles",
-			icon: UserRoundCheck,
-		},
-		{
-			name: "Settings",
-			url: "/settings",
-			icon: Settings2,
-		},
-	],
-}
+
+const navItems = [
+	{
+		name: "Users",
+		url: "/users",
+		icon: Users,
+	},
+	{
+		name: "Roles",
+		url: "/roles",
+		icon: UserRoundCheck,
+	},
+	{
+		name: "Settings",
+		url: "/settings",
+		icon: Settings2,
+	},
+]
 
 export function AppSidebar({
 	session,
@@ -63,7 +62,7 @@ export function AppSidebar({
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent>
-				<NavItems items={data.items} />
+				<NavItems items={navItems} />
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser session={session} />

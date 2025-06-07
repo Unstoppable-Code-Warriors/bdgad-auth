@@ -97,46 +97,86 @@ jobs:
                   username: ${{ secrets.VM_USER }}
                   key: ${{ secrets.VM_PRIVATE_KEY }}
                   port: 22
+                  envs: DOCKER_IMAGE_NAME,DOCKER_HUB_USERNAME,DOCKER_HUB_ACCESS_TOKEN,VM_ENV_PATH
                   script: |
+                      set -e  # Exit on any error
+
                       # Set variables
-                      DOCKER_IMAGE="${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest"
-                      CONTAINER_NAME="${{ env.DOCKER_IMAGE_NAME }}"
-                      ENV_PATH="${{ secrets.VM_ENV_PATH }}"
+                      DOCKER_IMAGE="${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:latest"
+                      CONTAINER_NAME="${DOCKER_IMAGE_NAME}"
+
+                      echo "🚀 Starting deployment..."
+                      echo "Docker Image: $DOCKER_IMAGE"
+                      echo "Container Name: $CONTAINER_NAME"
+                      echo "Env Path: $VM_ENV_PATH"
+
+                      # Check if Docker is running
+                      if ! docker info > /dev/null 2>&1; then
+                          echo "❌ Docker is not running or not accessible"
+                          exit 1
+                      fi
 
                       # Login to Docker Hub
-                      echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+                      echo "🔐 Logging into Docker Hub..."
+                      echo "$DOCKER_HUB_ACCESS_TOKEN" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
 
                       # Pull the latest image
+                      echo "📥 Pulling latest image..."
                       docker pull $DOCKER_IMAGE
 
                       # Stop and remove existing container if it exists
-                      if docker ps -a --format 'table {{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-                        echo "Stopping existing container..."
-                        docker stop $CONTAINER_NAME || true
-                        docker rm $CONTAINER_NAME || true
+                      if docker ps -q -f name="^${CONTAINER_NAME}$" | grep -q .; then
+                          echo "🛑 Stopping existing container..."
+                          docker stop $CONTAINER_NAME
+                          docker rm $CONTAINER_NAME
+                      elif docker ps -aq -f name="^${CONTAINER_NAME}$" | grep -q .; then
+                          echo "🗑️ Removing stopped container..."
+                          docker rm $CONTAINER_NAME
                       fi
 
-                      # Remove old images (keep last 3)
-                      docker images "${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}" --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}" | tail -n +4 | awk '{print $2}' | xargs -r docker rmi || true
+                      # Check if env file exists
+                      if [ ! -f "$VM_ENV_PATH" ]; then
+                          echo "❌ Environment file not found at: $VM_ENV_PATH"
+                          exit 1
+                      fi
 
                       # Run new container
+                      echo "🚀 Starting new container..."
                       docker run -d \
                         --name $CONTAINER_NAME \
                         --restart unless-stopped \
                         -p 3000:3000 \
-                        --env-file $ENV_PATH \
+                        --env-file $VM_ENV_PATH \
                         $DOCKER_IMAGE
 
                       # Verify deployment
+                      echo "⏳ Waiting for container to start..."
                       sleep 10
-                      if docker ps --filter "name=${CONTAINER_NAME}" --filter "status=running" | grep -q $CONTAINER_NAME; then
-                        echo "✅ Deployment successful! Container is running."
-                        docker logs --tail 20 $CONTAINER_NAME
+
+                      if docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+                          echo "✅ Deployment successful! Container is running."
+                          echo "📋 Recent logs:"
+                          docker logs --tail 20 $CONTAINER_NAME
                       else
-                        echo "❌ Deployment failed! Container is not running."
-                        docker logs --tail 50 $CONTAINER_NAME
-                        exit 1
+                          echo "❌ Deployment failed! Container is not running."
+                          echo "📋 Error logs:"
+                          docker logs --tail 50 $CONTAINER_NAME
+                          exit 1
                       fi
 
-                      # Cleanup
-                      docker system prune -f
+                      # Cleanup old images (keep last 3 versions)
+                      echo "🧹 Cleaning up old images..."
+                      OLD_IMAGES=$(docker images "${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}" --format "{{.ID}}" | tail -n +4)
+                      if [ ! -z "$OLD_IMAGES" ]; then
+                          echo $OLD_IMAGES | xargs docker rmi || true
+                      fi
+
+                      # General cleanup
+                      docker system prune -f > /dev/null 2>&1 || true
+
+                      echo "🎉 Deployment completed successfully!"
+              env:
+                  DOCKER_IMAGE_NAME: ${{ env.DOCKER_IMAGE_NAME }}
+                  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+                  DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+                  VM_ENV_PATH: ${{ secrets.VM_ENV_PATH }}

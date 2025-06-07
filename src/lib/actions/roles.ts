@@ -1,3 +1,5 @@
+"use server"
+
 import { db } from "@/db/drizzle"
 import { roles } from "@/db/schema"
 import { count, getTableColumns, eq } from "drizzle-orm"
@@ -27,6 +29,7 @@ async function getRolesCore({
 		return {
 			roles: roleList,
 			total: totalResult[0].count,
+			totalPages: Math.ceil(totalResult[0].count / limit),
 		}
 	})
 
@@ -36,21 +39,31 @@ async function getRolesCore({
 export const getRoles = withAuth(getRolesCore)
 export type GetRolesResult = Awaited<ReturnType<typeof getRoles>>
 
-// Example 2: Manual auth check with custom error handling
-export async function createRole(data: { name: string; description: string }) {
-	try {
-		// Manual auth check
-		await requireAuth()
+const createRoleCore = async (data: { name: string; description: string }) => {
+	const [newRole] = await db.insert(roles).values(data).returning()
 
-		const [newRole] = await db.insert(roles).values(data).returning()
-
-		return newRole
-	} catch (error) {
-		handleDatabaseError(error, "create role")
-	}
+	return newRole
 }
 
-// Example 3: Using withAuth for simple operations
+export const createRole = withAuth(createRoleCore)
+export type CreateRoleResult = Awaited<ReturnType<typeof createRole>>
+
+const updateRoleCore = async (
+	id: number,
+	data: { name: string; description: string }
+) => {
+	const [updatedRole] = await db
+		.update(roles)
+		.set(data)
+		.where(eq(roles.id, id))
+		.returning()
+
+	return updatedRole
+}
+
+export const updateRole = withAuth(updateRoleCore)
+export type UpdateRoleResult = Awaited<ReturnType<typeof updateRole>>
+
 const deleteRoleCore = async (id: number) => {
 	const [deletedRole] = await db
 		.delete(roles)

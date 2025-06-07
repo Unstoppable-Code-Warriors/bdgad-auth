@@ -5,17 +5,14 @@ import { createHeader, DataTable } from "@/components/ui/datatable"
 import { GetUsersResult } from "@/lib/actions/users"
 import { FetchLimit } from "@/lib/constants"
 import { ColumnDef, Row } from "@tanstack/react-table"
-import { MoreHorizontal, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useDialog } from "@/hooks/use-dialog"
-import AddUserForm from "./add-user-form"
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import ConfirmDeleteUser from "./confirm-delete"
+import { GetRolesResult } from "@/lib/actions/roles"
+import UserForm from "./user-form"
+import { Badge } from "@/components/ui/badge"
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
 	{
@@ -26,15 +23,30 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
 		accessorKey: "email",
 		header: createHeader("Email"),
 	},
+	{
+		accessorKey: "roles",
+		header: createHeader("Roles"),
+		cell: ({ row }) => {
+			return (
+				<div className="flex flex-wrap gap-2">
+					{row.original.roles.map(
+						(role: GetUsersResult["users"][0]["roles"][0]) => (
+							<Badge key={role.id}>{role.name}</Badge>
+						)
+					)}
+				</div>
+			)
+		},
+	},
 ]
 
-const UsersActions = () => {
+const UsersActions = ({ roles }: { roles: GetRolesResult["roles"] }) => {
 	const dialog = useDialog()
 
 	const openAddUserModal = () => {
 		dialog.open({
 			title: "Add New User",
-			children: <AddUserForm />,
+			children: <UserForm action="create" roles={roles} />,
 			size: "md",
 		})
 	}
@@ -49,8 +61,21 @@ const UsersActions = () => {
 	)
 }
 
-const ActionsMenu = ({ row }: { row: Row<GetUsersResult["users"][0]> }) => {
+const ActionsMenu = ({
+	row,
+	roles,
+}: {
+	row: Row<GetUsersResult["users"][0]>
+	roles: GetRolesResult["roles"]
+}) => {
 	const dialog = useDialog()
+
+	const openEditUserModal = () => {
+		dialog.open({
+			title: "Edit User",
+			children: <UserForm action="update" row={row} roles={roles} />,
+		})
+	}
 
 	const openConfirmDeleteDialog = () => {
 		dialog.open({
@@ -60,7 +85,9 @@ const ActionsMenu = ({ row }: { row: Row<GetUsersResult["users"][0]> }) => {
 	}
 	return (
 		<>
-			<DropdownMenuItem>Edit</DropdownMenuItem>
+			<DropdownMenuItem onClick={openEditUserModal}>
+				Edit
+			</DropdownMenuItem>
 			<DropdownMenuItem onClick={openConfirmDeleteDialog}>
 				Delete
 			</DropdownMenuItem>
@@ -68,7 +95,11 @@ const ActionsMenu = ({ row }: { row: Row<GetUsersResult["users"][0]> }) => {
 	)
 }
 
-const UsersTable = ({ users, total, totalPages }: GetUsersResult) => {
+const UsersTable = ({
+	users,
+	total,
+	roles,
+}: GetUsersResult & { roles: GetRolesResult["roles"] }) => {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const page = searchParams.get("page")
@@ -87,8 +118,8 @@ const UsersTable = ({ users, total, totalPages }: GetUsersResult) => {
 			page={parseInt(page as string) || 1}
 			pageSize={FetchLimit.USERS}
 			onPageChange={handlePageChange}
-			actions={<UsersActions />}
-			rowActions={(row) => <ActionsMenu row={row} />}
+			actions={<UsersActions roles={roles} />}
+			rowActions={(row) => <ActionsMenu row={row} roles={roles} />}
 		/>
 	)
 }

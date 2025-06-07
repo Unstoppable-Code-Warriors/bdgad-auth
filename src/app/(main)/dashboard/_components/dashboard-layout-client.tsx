@@ -46,7 +46,7 @@ const DashboardLayoutClient = ({
 						</Breadcrumb> */}
 					</div>
 				</header>
-				<section className="px-4">
+				<section className="flex flex-col px-4 grow">
 					<div className="flex items-center justify-between">
 						<h1 className="text-2xl font-bold mb-6">
 							{pathTitles[currentPath]}

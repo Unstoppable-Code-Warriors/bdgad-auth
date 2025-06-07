@@ -134,12 +134,6 @@ jobs:
                           docker rm $CONTAINER_NAME
                       fi
 
-                      # Check if env file exists
-                      if [ ! -f "$VM_ENV_PATH" ]; then
-                          echo "❌ Environment file not found at: $VM_ENV_PATH"
-                          exit 1
-                      fi
-
                       # Run new container
                       echo "🚀 Starting new container..."
                       docker run -d \

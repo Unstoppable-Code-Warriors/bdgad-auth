@@ -165,6 +165,7 @@ const UserForm = ({
 						id="email"
 						{...form.getInputProps("email")}
 						key={form.key("email")}
+						disabled={isUpdateMode}
 					/>
 				</div>
 				<div className="grid gap-2">

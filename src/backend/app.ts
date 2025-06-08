@@ -9,8 +9,19 @@ app.use(
 	"*",
 	cors({
 		origin: "*", // Add your frontend URLs
-		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-		allowHeaders: ["Content-Type", "Authorization"],
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+		allowHeaders: [
+			"Content-Type",
+			"Authorization",
+			"Accept",
+			"X-Requested-With",
+			"Access-Control-Allow-Origin",
+			"Access-Control-Allow-Headers",
+			"Access-Control-Allow-Methods",
+		],
+		exposeHeaders: ["Content-Length", "X-Request-Id"],
+		maxAge: 86400, // 24 hours
+		credentials: true,
 	})
 )
 

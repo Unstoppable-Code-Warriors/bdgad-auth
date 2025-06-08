@@ -60,6 +60,55 @@ export const changePasswordSchema = z
 		path: ["confirmPassword"],
 	})
 
+// Forgot password validation schema
+export const forgotPasswordSchema = z.object({
+	email: z
+		.string({
+			required_error: "Email is required",
+			invalid_type_error: "Email must be a string",
+		})
+		.email("Please provide a valid email address")
+		.min(1, "Email cannot be empty"),
+	// url validate, also allow localhost
+	redirectUrl: z
+		.string({
+			required_error: "Redirect URL is required",
+			invalid_type_error: "Redirect URL must be a string",
+		})
+		.url("Please provide a valid redirect URL"),
+})
+
+// Reset password validation schema
+export const resetPasswordSchema = z
+	.object({
+		token: z
+			.string({
+				required_error: "Reset token is required",
+				invalid_type_error: "Reset token must be a string",
+			})
+			.min(1, "Reset token cannot be empty"),
+		newPassword: z
+			.string({
+				required_error: "New password is required",
+				invalid_type_error: "New password must be a string",
+			})
+			.min(8, "New password must be at least 8 characters long")
+			.regex(
+				/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+				"New password must contain at least one lowercase letter, one uppercase letter, and one number"
+			),
+		confirmPassword: z
+			.string({
+				required_error: "Password confirmation is required",
+				invalid_type_error: "Password confirmation must be a string",
+			})
+			.min(1, "Password confirmation cannot be empty"),
+	})
+	.refine((data) => data.newPassword === data.confirmPassword, {
+		message: "New password and confirmation password do not match",
+		path: ["confirmPassword"],
+	})
+
 // Custom validation error formatter
 export const formatValidationError = (error: z.ZodError) => {
 	const formattedErrors = error.issues.map((issue) => ({

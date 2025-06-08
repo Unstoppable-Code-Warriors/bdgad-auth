@@ -1,7 +1,7 @@
 import { sign, verify } from "hono/jwt"
 import { db } from "../../db/drizzle"
-import { users, roles, userRoles } from "../../db/schema"
-import { eq } from "drizzle-orm"
+import { users, roles, userRoles, passwordResetTokens } from "../../db/schema"
+import { eq, and } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { UserInfo } from "../types"
 import { ValidatedContext } from "../types/context"
@@ -10,8 +10,14 @@ import {
 	loginSchema,
 	tokenParamSchema,
 	changePasswordSchema,
-	createValidator,
+	forgotPasswordSchema,
+	resetPasswordSchema,
 } from "../types/validation"
+import {
+	sendPasswordResetEmail,
+	sendPasswordResetConfirmationEmail,
+} from "../utils/emailService"
+import crypto from "crypto"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key"
 
@@ -282,10 +288,172 @@ export const changePassword = async (c: ValidatedContext) => {
 	}
 }
 
-// Export validation middleware for use in routes with improved error handling
-export const validateLogin = createValidator(loginSchema, "json")
-export const validateTokenParam = createValidator(tokenParamSchema, "param")
-export const validateChangePassword = createValidator(
-	changePasswordSchema,
-	"json"
-)
+export const forgotPassword = async (c: ValidatedContext) => {
+	try {
+		// Type assertion is safe here because zValidator middleware validates the data
+		const body = (c.req as any).valid("json") as z.infer<
+			typeof forgotPasswordSchema
+		>
+		const { email, redirectUrl } = body
+
+		// Find user by email
+		const user = await db
+			.select()
+			.from(users)
+			.where(eq(users.email, email))
+			.limit(1)
+
+		// Always return success to prevent email enumeration attacks
+		// But only send email if user exists and is active
+		if (user.length > 0 && user[0].status === "active") {
+			const foundUser = user[0]
+
+			// Generate secure random token
+			const resetToken = crypto.randomBytes(32).toString("hex")
+			const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+
+			// Store reset token in database
+			await db.insert(passwordResetTokens).values({
+				userId: foundUser.id,
+				token: resetToken,
+				expiresAt,
+				used: "false",
+			})
+
+			// Send password reset email
+			try {
+				await sendPasswordResetEmail(
+					redirectUrl,
+					foundUser.email,
+					resetToken,
+					foundUser.name
+				)
+			} catch (emailError) {
+				console.error(
+					"Failed to send password reset email:",
+					emailError
+				)
+				// Continue execution - don't reveal email sending failure to user
+			}
+		}
+
+		return c.json({
+			success: true,
+			message:
+				"If an account with that email exists, a password reset link has been sent.",
+		})
+	} catch (error) {
+		console.error("Forgot password error:", error)
+		return c.json({ error: "Internal server error" }, 500)
+	}
+}
+
+export const resetPassword = async (c: ValidatedContext) => {
+	try {
+		// Type assertion is safe here because zValidator middleware validates the data
+		const body = (c.req as any).valid("json") as z.infer<
+			typeof resetPasswordSchema
+		>
+		const { token, newPassword } = body
+
+		// Find valid reset token
+		const resetTokenRecord = await db
+			.select({
+				id: passwordResetTokens.id,
+				userId: passwordResetTokens.userId,
+				expiresAt: passwordResetTokens.expiresAt,
+				used: passwordResetTokens.used,
+			})
+			.from(passwordResetTokens)
+			.where(
+				and(
+					eq(passwordResetTokens.token, token),
+					eq(passwordResetTokens.used, "false")
+				)
+			)
+			.limit(1)
+
+		if (resetTokenRecord.length === 0) {
+			return c.json({ error: "Invalid or expired reset token" }, 400)
+		}
+
+		const tokenData = resetTokenRecord[0]
+
+		// Check if token has expired
+		if (new Date() > tokenData.expiresAt) {
+			return c.json({ error: "Reset token has expired" }, 400)
+		}
+
+		// Get user data
+		const user = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, tokenData.userId))
+			.limit(1)
+
+		if (user.length === 0) {
+			return c.json({ error: "User not found" }, 404)
+		}
+
+		const foundUser = user[0]
+
+		// Check if user is active
+		if (foundUser.status !== "active") {
+			return c.json({ error: "Account is not active" }, 401)
+		}
+
+		// Check if new password is different from current password
+		const isSamePassword = await bcrypt.compare(
+			newPassword,
+			foundUser.password
+		)
+		if (isSamePassword) {
+			return c.json(
+				{
+					error: "New password must be different from current password",
+				},
+				400
+			)
+		}
+
+		// Hash the new password
+		const hashedNewPassword = await bcrypt.hash(newPassword, 12)
+
+		// Update password in database
+		await db
+			.update(users)
+			.set({
+				password: hashedNewPassword,
+				updatedAt: new Date(),
+			})
+			.where(eq(users.id, foundUser.id))
+
+		// Mark reset token as used
+		await db
+			.update(passwordResetTokens)
+			.set({ used: "true" })
+			.where(eq(passwordResetTokens.id, tokenData.id))
+
+		// Send confirmation email
+		try {
+			await sendPasswordResetConfirmationEmail(
+				foundUser.email,
+				foundUser.name
+			)
+		} catch (emailError) {
+			console.error(
+				"Failed to send password reset confirmation email:",
+				emailError
+			)
+			// Continue execution - password reset was successful
+		}
+
+		return c.json({
+			success: true,
+			message: "Password has been reset successfully",
+		})
+	} catch (error) {
+		console.error("Reset password error:", error)
+		return c.json({ error: "Internal server error" }, 500)
+	}
+}

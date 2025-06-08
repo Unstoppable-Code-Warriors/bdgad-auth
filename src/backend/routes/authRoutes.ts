@@ -4,10 +4,16 @@ import {
 	getUserInfo,
 	verifyToken,
 	changePassword,
+	forgotPassword,
+	resetPassword,
+} from "../controllers/authController"
+import {
 	validateLogin,
 	validateTokenParam,
 	validateChangePassword,
-} from "../controllers/authController"
+	validateForgotPassword,
+	validateResetPassword,
+} from "../middleware/validationMiddleware"
 import { jwtAuth } from "../middleware/jwtMiddleware"
 
 const authRoutes = new Hono()
@@ -28,5 +34,11 @@ authRoutes.put(
 	validateChangePassword,
 	changePassword
 )
+
+// POST /auth/forgot-password - Request password reset
+authRoutes.post("/forgot-password", validateForgotPassword, forgotPassword)
+
+// POST /auth/reset-password - Reset password with token
+authRoutes.post("/reset-password", validateResetPassword, resetPassword)
 
 export default authRoutes

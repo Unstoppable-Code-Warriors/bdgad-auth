@@ -8,10 +8,32 @@ Create a `.env` file in the root directory with the following variables:
 # Database Configuration
 DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here
+
 # Default System Admin Account
 SYSTEM_ADMIN_EMAIL=admin@example.com
 SYSTEM_ADMIN_PASSWORD=your_secure_password_here
+
+# Email Configuration (for password reset functionality)
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password-here
+
+# Frontend URL (for password reset links)
+AUTH_URL=http://localhost:3000
 ```
+
+### Email Configuration Notes
+
+For Gmail with custom domain alias, you'll need to:
+
+1. Enable 2-factor authentication on your Google account
+2. Add your custom domain as an alias in Gmail settings
+3. Generate an "App Password" for this application
+4. Use the app password as `EMAIL_PASSWORD` (not your regular Gmail password)
+5. Set `EMAIL_USER` to your custom domain email (e.g., `noreply@yourdomain.com`)
+
+For other email providers, adjust the service configuration in `src/backend/utils/emailService.ts`.
 
 ## Database Setup
 

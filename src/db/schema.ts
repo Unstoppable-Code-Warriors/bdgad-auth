@@ -44,3 +44,16 @@ export const userRoles = pgTable("user_roles", {
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+	id: serial("id").primaryKey(),
+	userId: integer("user_id")
+		.references(() => users.id, {
+			onDelete: "cascade",
+		})
+		.notNull(),
+	token: varchar("token", { length: 255 }).notNull().unique(),
+	expiresAt: timestamp("expires_at").notNull(),
+	used: varchar("used", { length: 10 }).notNull().default("false"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+})

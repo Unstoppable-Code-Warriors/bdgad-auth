@@ -14,20 +14,6 @@ const transporter = nodemailer.createTransport({
 	},
 })
 
-// Verify transporter configuration on startup
-transporter.verify((error, success) => {
-	if (error) {
-		console.error("❌ Email transporter verification failed:")
-		console.error("Error details:", error)
-		console.error("Check your EMAIL_USER and EMAIL_PASSWORD in .env file")
-		console.error(
-			"Make sure you're using an App Password, not your regular Gmail password"
-		)
-	} else {
-		console.log("✅ Email transporter is ready to send emails")
-	}
-})
-
 export const sendPasswordResetEmail = async (
 	redirectUrl: string,
 	email: string,

@@ -9,6 +9,7 @@ import { z } from "zod"
 import {
 	loginSchema,
 	tokenParamSchema,
+	changePasswordSchema,
 	createValidator,
 } from "../types/validation"
 
@@ -159,38 +160,124 @@ export const getUserInfo = async (c: ValidatedContext) => {
 export const verifyToken = async (c: ValidatedContext) => {
 	try {
 		// Type assertion is safe here because zValidator middleware validates the data
-		const { token } = (c.req as any).valid("param") as z.infer<
+		const params = (c.req as any).valid("param") as z.infer<
 			typeof tokenParamSchema
 		>
+		const { token } = params
 
 		try {
 			// Verify JWT token
 			const payload = await verify(token, JWT_SECRET)
 
+			// Type assertion for our custom payload structure
+			const userPayload = payload as unknown as {
+				sub: string
+				email: string
+				name: string
+				roles: string[]
+				iat: number
+				exp: number
+			}
+
 			return c.json({
 				success: true,
 				valid: true,
-				payload: {
-					sub: payload.sub,
-					email: payload.email,
-					name: payload.name,
-					roles: payload.roles,
-					iat: payload.iat,
-					exp: payload.exp,
+				user: {
+					id: parseInt(userPayload.sub),
+					email: userPayload.email,
+					name: userPayload.name,
+					roles: userPayload.roles,
 				},
 			})
 		} catch (jwtError) {
-			return c.json(
-				{
-					success: false,
-					valid: false,
-					error: "Invalid or expired token",
-				},
-				401
-			)
+			return c.json({
+				success: true,
+				valid: false,
+				error: "Invalid or expired token",
+			})
 		}
 	} catch (error) {
-		console.error("Verify token error:", error)
+		console.error("Token verification error:", error)
+		return c.json({ error: "Internal server error" }, 500)
+	}
+}
+
+export const changePassword = async (c: ValidatedContext) => {
+	try {
+		// Get user from context (set by JWT middleware)
+		const user = c.get("user")
+
+		if (!user) {
+			return c.json({ error: "User not authenticated" }, 401)
+		}
+
+		// Type assertion is safe here because zValidator middleware validates the data
+		const body = (c.req as any).valid("json") as z.infer<
+			typeof changePasswordSchema
+		>
+		const { currentPassword, newPassword } = body
+
+		// Get user from database to verify current password
+		const dbUser = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, user.id))
+			.limit(1)
+
+		if (dbUser.length === 0) {
+			return c.json({ error: "User not found" }, 404)
+		}
+
+		const foundUser = dbUser[0]
+
+		// Check if user is active
+		if (foundUser.status !== "active") {
+			return c.json({ error: "Account is not active" }, 401)
+		}
+
+		// Verify current password
+		const isCurrentPasswordValid = await bcrypt.compare(
+			currentPassword,
+			foundUser.password
+		)
+
+		if (!isCurrentPasswordValid) {
+			return c.json({ error: "Current password is incorrect" }, 400)
+		}
+
+		// Check if new password is different from current password
+		const isSamePassword = await bcrypt.compare(
+			newPassword,
+			foundUser.password
+		)
+
+		if (isSamePassword) {
+			return c.json(
+				{
+					error: "New password must be different from current password",
+				},
+				400
+			)
+		}
+
+		// Hash the new password
+		const hashedNewPassword = await bcrypt.hash(newPassword, 12)
+
+		// Update password in database
+		await db
+			.update(users)
+			.set({
+				password: hashedNewPassword,
+				updatedAt: new Date(),
+			})
+			.where(eq(users.id, user.id))
+
+		return c.json({
+			success: true,
+			message: "Password changed successfully",
+		})
+	} catch (error) {
+		console.error("Change password error:", error)
 		return c.json({ error: "Internal server error" }, 500)
 	}
 }
@@ -198,3 +285,7 @@ export const verifyToken = async (c: ValidatedContext) => {
 // Export validation middleware for use in routes with improved error handling
 export const validateLogin = createValidator(loginSchema, "json")
 export const validateTokenParam = createValidator(tokenParamSchema, "param")
+export const validateChangePassword = createValidator(
+	changePasswordSchema,
+	"json"
+)

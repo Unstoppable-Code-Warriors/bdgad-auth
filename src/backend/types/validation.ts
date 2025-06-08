@@ -29,6 +29,37 @@ export const tokenParamSchema = z.object({
 		.min(1, "Token cannot be empty"),
 })
 
+// Change password validation schema
+export const changePasswordSchema = z
+	.object({
+		currentPassword: z
+			.string({
+				required_error: "Current password is required",
+				invalid_type_error: "Current password must be a string",
+			})
+			.min(1, "Current password cannot be empty"),
+		newPassword: z
+			.string({
+				required_error: "New password is required",
+				invalid_type_error: "New password must be a string",
+			})
+			.min(8, "New password must be at least 8 characters long")
+			.regex(
+				/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+				"New password must contain at least one lowercase letter, one uppercase letter, and one number"
+			),
+		confirmPassword: z
+			.string({
+				required_error: "Password confirmation is required",
+				invalid_type_error: "Password confirmation must be a string",
+			})
+			.min(1, "Password confirmation cannot be empty"),
+	})
+	.refine((data) => data.newPassword === data.confirmPassword, {
+		message: "New password and confirmation password do not match",
+		path: ["confirmPassword"],
+	})
+
 // Custom validation error formatter
 export const formatValidationError = (error: z.ZodError) => {
 	const formattedErrors = error.issues.map((issue) => ({

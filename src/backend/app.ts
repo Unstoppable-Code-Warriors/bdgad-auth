@@ -23,6 +23,7 @@ app.get("/", (c) => {
 				login: "POST /auth/login",
 				userInfo: "GET /auth/me",
 				verifyToken: "GET /auth/verify/:token",
+				changePassword: "PUT /auth/change-password",
 			},
 		},
 	})

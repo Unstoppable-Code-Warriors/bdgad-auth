@@ -96,6 +96,7 @@ const RoleForm = ({
 						placeholder="Enter role name"
 						{...form.getInputProps("name")}
 						key={form.key("name")}
+						disabled
 					/>
 				</div>
 				<div className="grid gap-2">

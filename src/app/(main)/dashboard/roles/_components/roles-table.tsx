@@ -65,9 +65,9 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
 			<DropdownMenuItem onClick={openEditRoleModal}>
 				Edit
 			</DropdownMenuItem>
-			<DropdownMenuItem onClick={openConfirmDeleteDialog}>
+			{/* <DropdownMenuItem onClick={openConfirmDeleteDialog}>
 				Delete
-			</DropdownMenuItem>
+			</DropdownMenuItem> */}
 		</>
 	)
 }

@@ -25,16 +25,13 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
 	},
 	{
 		accessorKey: "roles",
-		header: createHeader("Roles"),
+		header: createHeader("Role"),
 		cell: ({ row }) => {
-			return (
-				<div className="flex flex-wrap gap-2">
-					{row.original.roles.map(
-						(role: GetUsersResult["users"][0]["roles"][0]) => (
-							<Badge key={role.id}>{role.name}</Badge>
-						)
-					)}
-				</div>
+			const role = row.original.roles[0]
+			return role ? (
+				<Badge>{role.name}</Badge>
+			) : (
+				<span className="text-sm text-muted-foreground">No role</span>
 			)
 		},
 	},

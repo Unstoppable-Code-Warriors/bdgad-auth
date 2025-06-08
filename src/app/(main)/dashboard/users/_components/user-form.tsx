@@ -43,8 +43,7 @@ const UserForm = ({
 			name: userData?.name || "",
 			email: userData?.email || "",
 			password: "",
-			selectedRoles:
-				userData?.roles?.map((role) => role.id) || ([] as number[]),
+			selectedRole: userData?.roles?.[0]?.id || (null as number | null),
 		},
 
 		validate: {
@@ -66,6 +65,8 @@ const UserForm = ({
 						: "Password must be at least 8 characters long"
 				}
 			},
+			selectedRole: (value) =>
+				value !== null ? null : "Please select a role",
 		},
 	})
 
@@ -76,34 +77,28 @@ const UserForm = ({
 				name: userData.name,
 				email: userData.email,
 				password: "",
-				selectedRoles: userData.roles?.map((role) => role.id) || [],
+				selectedRole: userData.roles?.[0]?.id || null,
 			})
 		}
 	}, [isUpdateMode, userData])
 
-	const addRole = (roleId: number) => {
-		const currentRoles = form.getValues().selectedRoles
-		if (!currentRoles.includes(roleId)) {
-			form.setFieldValue("selectedRoles", [...currentRoles, roleId])
-		}
+	const selectRole = (roleId: number) => {
+		form.setFieldValue("selectedRole", roleId)
 	}
 
-	const removeRole = (roleId: number) => {
-		const currentRoles = form.getValues().selectedRoles
-		form.setFieldValue(
-			"selectedRoles",
-			currentRoles.filter((id) => id !== roleId)
-		)
+	const clearRole = () => {
+		form.setFieldValue("selectedRole", null)
 	}
 
-	const getSelectedRoles = () => {
-		const selectedRoleIds = form.getValues().selectedRoles
-		return roles.filter((role) => selectedRoleIds.includes(role.id))
+	const getSelectedRole = () => {
+		const selectedRoleId = form.getValues().selectedRole
+		return selectedRoleId
+			? roles.find((role) => role.id === selectedRoleId)
+			: null
 	}
 
 	const getAvailableRoles = () => {
-		const selectedRoleIds = form.getValues().selectedRoles
-		return roles.filter((role) => !selectedRoleIds.includes(role.id))
+		return roles
 	}
 
 	const handleSubmit = async (values: typeof form.values) => {
@@ -115,7 +110,7 @@ const UserForm = ({
 					id: userData.id,
 					name: values.name,
 					email: values.email,
-					roleIds: values.selectedRoles,
+					roleIds: values.selectedRole ? [values.selectedRole] : [],
 				}
 
 				// Only include password if it's provided
@@ -132,7 +127,7 @@ const UserForm = ({
 					password: values.password,
 					name: values.name,
 					metadata: {},
-					roleIds: values.selectedRoles,
+					roleIds: values.selectedRole ? [values.selectedRole] : [],
 				})
 				toast.success("User created successfully")
 			}
@@ -194,36 +189,38 @@ const UserForm = ({
 					/>
 				</div>
 				<div className="grid gap-2">
-					<Label>Roles</Label>
+					<Label>Role</Label>
 					<div className="space-y-2">
-						{/* Selected Roles Pills */}
-						<div className="flex flex-wrap gap-2 min-h-[2.5rem] p-2 border rounded-md bg-background">
-							{getSelectedRoles().length > 0 ? (
-								getSelectedRoles().map((role) => (
-									<Badge
-										key={role.id}
-										variant="secondary"
-										className="flex items-center gap-1 pr-1"
+						{/* Selected Role Display */}
+						<div className="flex items-center justify-between p-3 border rounded-md bg-background min-h-[2.5rem]">
+							{getSelectedRole() ? (
+								<div className="flex items-center justify-between w-full">
+									<div>
+										<div className="font-medium">
+											{getSelectedRole()?.name}
+										</div>
+										<div className="text-xs text-muted-foreground">
+											{getSelectedRole()?.description}
+										</div>
+									</div>
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={clearRole}
 									>
-										<span>{role.name}</span>
-										<button
-											type="button"
-											onClick={() => removeRole(role.id)}
-											className="ml-1 hover:bg-destructive/20 rounded-full p-0.5 transition-colors"
-										>
-											<X className="h-3 w-3" />
-										</button>
-									</Badge>
-								))
+										<X className="h-4 w-4" />
+									</Button>
+								</div>
 							) : (
 								<span className="text-sm text-muted-foreground">
-									No roles selected
+									No role selected
 								</span>
 							)}
 						</div>
 
-						{/* Add Role Dropdown */}
-						{getAvailableRoles().length > 0 && (
+						{/* Select Role Dropdown */}
+						{!getSelectedRole() && (
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
@@ -233,7 +230,7 @@ const UserForm = ({
 										className="w-fit"
 									>
 										<Plus className="h-4 w-4 mr-1" />
-										Add Role
+										Select Role
 									</Button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent
@@ -243,7 +240,7 @@ const UserForm = ({
 									{getAvailableRoles().map((role) => (
 										<DropdownMenuItem
 											key={role.id}
-											onClick={() => addRole(role.id)}
+											onClick={() => selectRole(role.id)}
 											className="flex flex-col items-start p-3"
 										>
 											<div className="font-medium">

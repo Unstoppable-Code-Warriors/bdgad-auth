@@ -1,10 +1,16 @@
+// Role interface
+export interface Role {
+	id: number
+	name: string
+}
+
 // Context Variables type for Hono
 export type Variables = {
 	user: {
 		id: number
 		email: string
 		name: string
-		roles: string[]
+		roles: Role[]
 	}
 }
 
@@ -14,7 +20,7 @@ export interface UserInfo {
 	email: string
 	name: string
 	status: string
-	roles: string[]
+	roles: Role[]
 	metadata: any
 }
 
@@ -23,7 +29,7 @@ export interface JWTPayload {
 	sub: string
 	email: string
 	name: string
-	roles: string[]
+	roles: Role[]
 	iat: number
 	exp: number
 }

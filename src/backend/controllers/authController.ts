@@ -3,7 +3,7 @@ import { db } from "../../db/drizzle"
 import { users, roles, userRoles, passwordResetTokens } from "../../db/schema"
 import { eq, and } from "drizzle-orm"
 import bcrypt from "bcryptjs"
-import { UserInfo } from "../types"
+import { UserInfo, Role } from "../types"
 import { ValidatedContext } from "../types/context"
 import { z } from "zod"
 import {
@@ -57,20 +57,24 @@ export const login = async (c: ValidatedContext) => {
 		// Get user roles
 		const userRoleData = await db
 			.select({
+				roleId: roles.id,
 				roleName: roles.name,
 			})
 			.from(userRoles)
 			.innerJoin(roles, eq(userRoles.roleId, roles.id))
 			.where(eq(userRoles.userId, foundUser.id))
 
-		const roleNames = userRoleData.map((role) => role.roleName)
+		const rolesList = userRoleData.map((role) => ({
+			id: role.roleId,
+			name: role.roleName,
+		}))
 
 		// Create JWT payload
 		const payload = {
 			sub: foundUser.id.toString(),
 			email: foundUser.email,
 			name: foundUser.name,
-			roles: roleNames,
+			roles: rolesList,
 			iat: Math.floor(Date.now() / 1000),
 			exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
 		}
@@ -85,7 +89,7 @@ export const login = async (c: ValidatedContext) => {
 				id: foundUser.id,
 				email: foundUser.email,
 				name: foundUser.name,
-				roles: roleNames,
+				roles: rolesList,
 				status: foundUser.status,
 			},
 		})
@@ -135,6 +139,7 @@ export const getUserInfo = async (c: ValidatedContext) => {
 		// Get user roles
 		const userRoleData = await db
 			.select({
+				roleId: roles.id,
 				roleName: roles.name,
 				roleDescription: roles.description,
 			})
@@ -142,14 +147,17 @@ export const getUserInfo = async (c: ValidatedContext) => {
 			.innerJoin(roles, eq(userRoles.roleId, roles.id))
 			.where(eq(userRoles.userId, foundUser.id))
 
-		const roleNames = userRoleData.map((role) => role.roleName)
+		const rolesList = userRoleData.map((role) => ({
+			id: role.roleId,
+			name: role.roleName,
+		}))
 
 		const userInfo: UserInfo = {
 			id: foundUser.id,
 			email: foundUser.email,
 			name: foundUser.name,
 			status: foundUser.status,
-			roles: roleNames,
+			roles: rolesList,
 			metadata: foundUser.metadata,
 		}
 
@@ -180,7 +188,7 @@ export const verifyToken = async (c: ValidatedContext) => {
 				sub: string
 				email: string
 				name: string
-				roles: string[]
+				roles: Role[]
 				iat: number
 				exp: number
 			}

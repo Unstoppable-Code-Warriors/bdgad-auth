@@ -95,7 +95,7 @@ const RolesTable = ({
 			page={parseInt(page as string) || 1}
 			pageSize={FetchLimit.ROLES}
 			onPageChange={handlePageChange}
-			actions={<RolesActions />}
+			// actions={<RolesActions />}
 			rowActions={(row) => <ActionsMenu row={row} />}
 		/>
 	)

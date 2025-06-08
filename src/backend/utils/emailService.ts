@@ -3,12 +3,6 @@ import nodemailer from "nodemailer"
 const EMAIL_USER = process.env.EMAIL_USER
 const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD
 
-if (!EMAIL_USER || !EMAIL_PASSWORD) {
-	throw new Error(
-		"EMAIL_USER and EMAIL_PASSWORD must be set in environment variables"
-	)
-}
-
 console.log(`Email configuration: Using ${EMAIL_USER} for SMTP authentication`)
 
 // Create transporter with enhanced debugging

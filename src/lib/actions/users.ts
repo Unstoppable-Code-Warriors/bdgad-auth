@@ -6,6 +6,7 @@ import { count, eq, getTableColumns } from "drizzle-orm"
 import { withAuth } from "@/lib/utils/auth"
 import bcrypt from "bcryptjs"
 import { FetchLimit } from "../constants"
+import { sendPasswordEmail } from "@/lib/utils/email"
 
 // Define the type for user with roles
 type UserWithRoles = Omit<typeof users.$inferSelect, "password"> & {
@@ -84,18 +85,28 @@ export type GetUsersResult = Awaited<ReturnType<typeof getUsers>>
 
 async function createUserCore({
 	email,
-	password,
 	name,
 	metadata,
 	roleIds = [],
 }: {
 	email: string
-	password: string
 	name: string
 	metadata: Record<string, any>
 	roleIds?: number[]
 }) {
-	const hashedPassword = await bcrypt.hash(password, 12)
+	// Generate a random password
+	const generateRandomPassword = () => {
+		const chars =
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
+		let password = ""
+		for (let i = 0; i < 12; i++) {
+			password += chars.charAt(Math.floor(Math.random() * chars.length))
+		}
+		return password
+	}
+
+	const generatedPassword = generateRandomPassword()
+	const hashedPassword = await bcrypt.hash(generatedPassword, 12)
 
 	const result = await db.transaction(async (tx) => {
 		// Create the user
@@ -117,6 +128,16 @@ async function createUserCore({
 					roleId,
 				}))
 			)
+		}
+
+		// TODO: Send email with generated password to user
+		// This would require an email service to be implemented
+		try {
+			await sendPasswordEmail(email, generatedPassword, name)
+		} catch (emailError) {
+			console.error("Failed to send password email:", emailError)
+			// Don't throw here - user creation was successful, just email failed
+			// The frontend will handle this case with appropriate messaging
 		}
 
 		return newUser

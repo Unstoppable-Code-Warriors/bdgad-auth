@@ -42,29 +42,25 @@ const UserForm = ({
 		initialValues: {
 			name: userData?.name || "",
 			email: userData?.email || "",
-			password: "",
 			selectedRole: userData?.roles?.[0]?.id || (null as number | null),
 		},
 
 		validate: {
-			name: (value) =>
-				value.trim().length > 0 ? null : "Name is required",
+			name: (value) => {
+				const trimmedValue = value.trim()
+				if (trimmedValue.length === 0) {
+					return "Name is required"
+				}
+				if (!/^[a-zA-Z0-9\s]+$/.test(trimmedValue)) {
+					return "Name can only contain letters, numbers and spaces"
+				}
+				if (trimmedValue.length > 50) {
+					return "Name must be 50 characters or less"
+				}
+				return null
+			},
 			email: (value) =>
 				/^\S+@\S+$/.test(value.trim()) ? null : "Invalid email",
-			password: (value) => {
-				// Password is required for create, optional for update
-				if (isUpdateMode) {
-					// If password is provided in update mode, it must be at least 8 characters
-					return value.trim().length === 0 || value.trim().length >= 8
-						? null
-						: "Password must be at least 8 characters long"
-				} else {
-					// Password is required for create mode
-					return value.trim().length >= 8
-						? null
-						: "Password must be at least 8 characters long"
-				}
-			},
 			selectedRole: (value) =>
 				value !== null ? null : "Please select a role",
 		},
@@ -76,7 +72,6 @@ const UserForm = ({
 			form.setValues({
 				name: userData.name,
 				email: userData.email,
-				password: "",
 				selectedRole: userData.roles?.[0]?.id || null,
 			})
 		}
@@ -106,30 +101,24 @@ const UserForm = ({
 		try {
 			if (isUpdateMode && userData) {
 				// Update user
-				const updateData: any = {
+				await updateUser({
 					id: userData.id,
 					name: values.name,
 					email: values.email,
 					roleIds: values.selectedRole ? [values.selectedRole] : [],
-				}
-
-				// Only include password if it's provided
-				if (values.password.trim().length > 0) {
-					updateData.password = values.password
-				}
-
-				await updateUser(updateData)
+				})
 				toast.success("User updated successfully")
 			} else {
-				// Create user
+				// Create user - password will be auto-generated and emailed
 				await createUser({
 					email: values.email,
-					password: values.password,
 					name: values.name,
 					metadata: {},
 					roleIds: values.selectedRole ? [values.selectedRole] : [],
 				})
-				toast.success("User created successfully")
+				toast.success(
+					"User created successfully! Login credentials have been sent to their email address."
+				)
 			}
 
 			form.reset()
@@ -137,7 +126,14 @@ const UserForm = ({
 			router.refresh()
 		} catch (error) {
 			console.error(error)
-			toast.error(`Failed to ${isUpdateMode ? "update" : "create"} user`)
+			const errorMessage = `Failed to ${
+				isUpdateMode ? "update" : "create"
+			} user${
+				isUpdateMode
+					? "."
+					: ", please check if the email address has been used before."
+			}`
+			toast.error(errorMessage)
 		} finally {
 			setLoading(false)
 		}
@@ -146,51 +142,36 @@ const UserForm = ({
 	return (
 		<form onSubmit={form.onSubmit(handleSubmit)}>
 			<div className="grid gap-4 py-4">
-				{Object.keys(form.errors).length > 0 && (
-					<div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-						{Object.values(form.errors)[0]}
-					</div>
-				)}
 				<div className="grid gap-2">
-					<Label htmlFor="name">Name</Label>
+					<Label htmlFor="name">Name*</Label>
 					<Input
 						id="name"
 						{...form.getInputProps("name")}
 						key={form.key("name")}
+						maxLength={50}
 					/>
+					{form.errors.name && (
+						<div className="text-sm text-red-600">
+							{form.errors.name}
+						</div>
+					)}
 				</div>
 				<div className="grid gap-2">
-					<Label htmlFor="email">Email</Label>
+					<Label htmlFor="email">Email*</Label>
 					<Input
 						id="email"
 						{...form.getInputProps("email")}
 						key={form.key("email")}
 						disabled={isUpdateMode}
 					/>
+					{form.errors.email && (
+						<div className="text-sm text-red-600">
+							{form.errors.email}
+						</div>
+					)}
 				</div>
 				<div className="grid gap-2">
-					<Label htmlFor="password">
-						Password{" "}
-						{isUpdateMode && (
-							<span className="text-sm text-muted-foreground">
-								(leave empty to keep current)
-							</span>
-						)}
-					</Label>
-					<Input
-						id="password"
-						type="password"
-						placeholder={
-							isUpdateMode
-								? "Enter new password (optional)"
-								: "Enter password"
-						}
-						{...form.getInputProps("password")}
-						key={form.key("password")}
-					/>
-				</div>
-				<div className="grid gap-2">
-					<Label>Role</Label>
+					<Label>Role*</Label>
 					<div className="space-y-2">
 						{/* Selected Role Display */}
 						<div className="flex items-center justify-between p-3 border rounded-md bg-background min-h-[2.5rem]">
@@ -256,6 +237,11 @@ const UserForm = ({
 							</DropdownMenu>
 						)}
 					</div>
+					{form.errors.selectedRole && (
+						<div className="text-sm text-red-600">
+							{form.errors.selectedRole}
+						</div>
+					)}
 				</div>
 				<Button type="submit" disabled={loading}>
 					{loading

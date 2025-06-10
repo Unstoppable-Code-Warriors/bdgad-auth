@@ -6,12 +6,14 @@ import { X } from "lucide-react";
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner"; // Bạn có thể thay bằng 'react-hot-toast'
+import { GetUsersResult } from "@/lib/actions/users";
 
 interface ImportExcelFormProps {
   closeModal: () => void;
+  users: GetUsersResult["users"];
 }
 
-const ImportExcelForm = ({ closeModal }: ImportExcelFormProps) => {
+const ImportExcelForm = ({ closeModal, users }: ImportExcelFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -267,7 +269,16 @@ const ImportExcelForm = ({ closeModal }: ImportExcelFormProps) => {
         return;
       }
 
+      const duplicatedEmails = processedData.filter((item) =>
+        users.some((user) => user.email === item.Email)
+      );
+
+      if (duplicatedEmails.length > 0) {
+        toast.error("Email already exists in the system.");
+        return;
+      }
       console.log("Parsed and validated Excel Data:", processedData);
+
       toast.success(
         `Excel file parsed successfully. ${processedData.length} valid account(s) found.`
       );

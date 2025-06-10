@@ -38,7 +38,13 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   },
 ];
 
-const UsersActions = ({ roles }: { roles: GetRolesResult["roles"] }) => {
+const UsersActions = ({
+  roles,
+  users,
+}: {
+  roles: GetRolesResult["roles"];
+  users: GetUsersResult["users"];
+}) => {
   const dialog = useDialog();
 
   const openAddUserModal = () => {
@@ -56,10 +62,12 @@ const UsersActions = ({ roles }: { roles: GetRolesResult["roles"] }) => {
     link.click();
   };
 
-  const hanldeImportExcel = () => {
+  const hanldeImportExcel = (users: GetUsersResult["users"]) => {
     dialog.open({
       title: "Import Excel",
-      children: <ImportExcelForm closeModal={() => dialog.closeAll()} />,
+      children: (
+        <ImportExcelForm users={users} closeModal={() => dialog.closeAll()} />
+      ),
       size: "md",
     });
   };
@@ -70,7 +78,7 @@ const UsersActions = ({ roles }: { roles: GetRolesResult["roles"] }) => {
         <FileDown className="h-4 w-4 mr-2" />
         Download Template
       </Button>
-      <Button variant="outline" onClick={hanldeImportExcel}>
+      <Button variant="outline" onClick={() => hanldeImportExcel(users)}>
         <Download className="h-4 w-4 mr-2" />
         Import excel
       </Button>
@@ -137,7 +145,7 @@ const UsersTable = ({
       page={parseInt(page as string) || 1}
       pageSize={FetchLimit.USERS}
       onPageChange={handlePageChange}
-      actions={<UsersActions roles={roles} />}
+      actions={<UsersActions roles={roles} users={users} />}
       rowActions={(row) => <ActionsMenu row={row} roles={roles} />}
     />
   );

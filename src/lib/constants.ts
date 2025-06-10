@@ -1,10 +1,10 @@
 export const pathTitles: Record<string, string> = {
-	users: "Users",
-	roles: "Roles",
-	settings: "Settings",
-}
+  users: "Users",
+  roles: "Roles",
+  settings: "Settings",
+};
 
 export enum FetchLimit {
-	USERS = 15,
-	ROLES = 15,
+  USERS = 100,
+  ROLES = 15,
 }

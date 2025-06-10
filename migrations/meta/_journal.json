@@ -15,6 +15,13 @@
       "when": 1749526970011,
       "tag": "0001_dry_puppet_master",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1749569218994,
+      "tag": "0002_polite_scream",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,22 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
       );
     },
   },
+  {
+    accessorKey: "status",
+    header: createHeader("Status"),
+  },
+  {
+    accessorKey: "phone",
+    header: createHeader("Phone"),
+    cell: ({ row }) =>
+      (row.original?.metadata as Record<string, string>)?.["phone"] || "-",
+  },
+  {
+    accessorKey: "address",
+    header: createHeader("Address"),
+    cell: ({ row }) =>
+      (row.original?.metadata as Record<string, string>)?.["address"] || "-",
+  },
 ];
 
 const UsersActions = ({

@@ -5,36 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1749263586040,
-      "tag": "0000_puzzling_post",
+      "when": 1749526910484,
+      "tag": "0000_conscious_bullseye",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1749275073374,
-      "tag": "0001_steady_vampiro",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1749277318462,
-      "tag": "0002_minor_bug",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1749294502643,
-      "tag": "0003_salty_fallen_one",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1749359205797,
-      "tag": "0004_opposite_moira_mactaggert",
+      "when": 1749526970011,
+      "tag": "0001_dry_puppet_master",
       "breakpoints": true
     }
   ]

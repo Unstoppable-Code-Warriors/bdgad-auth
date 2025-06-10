@@ -21,7 +21,7 @@ type UserWithRoles = Omit<typeof users.$inferSelect, "password"> & {
 };
 
 // Type for batch user creation input
-type CreateUserInput = {
+export type CreateUserInput = {
   email: string;
   name: string;
   metadata: Record<string, any>;

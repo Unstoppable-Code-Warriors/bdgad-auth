@@ -6,14 +6,21 @@ import { X } from "lucide-react";
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner"; // Bạn có thể thay bằng 'react-hot-toast'
-import { GetUsersResult } from "@/lib/actions/users";
+import { createUsers, GetUsersResult } from "@/lib/actions/users";
+import { GetRolesResult } from "@/lib/actions/roles";
+import convertRawUsersToCreateUserInput from "@/lib/utils/convert-data";
 
 interface ImportExcelFormProps {
   closeModal: () => void;
   users: GetUsersResult["users"];
+  roles: GetRolesResult["roles"];
 }
 
-const ImportExcelForm = ({ closeModal, users }: ImportExcelFormProps) => {
+const ImportExcelForm = ({
+  closeModal,
+  users,
+  roles,
+}: ImportExcelFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -277,8 +284,12 @@ const ImportExcelForm = ({ closeModal, users }: ImportExcelFormProps) => {
         toast.error("Email already exists in the system.");
         return;
       }
-      console.log("Parsed and validated Excel Data:", processedData);
 
+      const convertedUsers = convertRawUsersToCreateUserInput(
+        processedData,
+        roles
+      );
+      await createUsers(convertedUsers);
       toast.success(
         `Excel file parsed successfully. ${processedData.length} valid account(s) found.`
       );

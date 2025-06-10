@@ -62,11 +62,18 @@ const UsersActions = ({
     link.click();
   };
 
-  const hanldeImportExcel = (users: GetUsersResult["users"]) => {
+  const hanldeImportExcel = (
+    users: GetUsersResult["users"],
+    roles: GetRolesResult["roles"]
+  ) => {
     dialog.open({
       title: "Import Excel",
       children: (
-        <ImportExcelForm users={users} closeModal={() => dialog.closeAll()} />
+        <ImportExcelForm
+          users={users}
+          roles={roles}
+          closeModal={() => dialog.closeAll()}
+        />
       ),
       size: "md",
     });
@@ -78,7 +85,7 @@ const UsersActions = ({
         <FileDown className="h-4 w-4 mr-2" />
         Download Template
       </Button>
-      <Button variant="outline" onClick={() => hanldeImportExcel(users)}>
+      <Button variant="outline" onClick={() => hanldeImportExcel(users, roles)}>
         <Download className="h-4 w-4 mr-2" />
         Import excel
       </Button>

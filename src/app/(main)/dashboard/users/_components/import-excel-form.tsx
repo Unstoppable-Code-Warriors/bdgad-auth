@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner"; // Bạn có thể thay bằng 'react-hot-toast'
@@ -19,6 +19,7 @@ import {
   validateEmailNotExistInSystem,
   formatValidationErrors,
 } from "@/lib/utils/validate-data-excel";
+import { useRouter } from "next/navigation";
 interface ImportExcelFormProps {
   closeModal: () => void;
   users: GetUsersResult["users"];
@@ -33,7 +34,8 @@ const ImportExcelForm = ({
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -157,20 +159,25 @@ const ImportExcelForm = ({
       ) {
         return;
       }
-      await createUsers(processedData!);
-      toast.success(
-        `Excel file parsed successfully. ${
-          processedData!.length
-        } valid account(s) found.`
-      );
+      setLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setLoading(false);
       closeModal();
+      await toast.promise(createUsers(processedData), {
+        loading: "Creating users...",
+        success: `Excel file parsed successfully. ${processedData.length} valid account(s) found.`,
+        error: "Failed to create users. Please try again.",
+      });
+      router.refresh();
     } catch (err) {
+      setLoading(false);
       console.error("Error reading Excel file:", err);
       toast.error(
         "Failed to read Excel file. Please check if the file is corrupted or in correct format."
       );
     }
   };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex flex-col gap-1">
@@ -184,12 +191,14 @@ const ImportExcelForm = ({
             type="file"
             accept=".xlsx, .xls"
             onChange={handleFileChange}
+            disabled={loading}
           />
           <Button
             className="bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 cursor-pointer"
             type="button"
             variant="ghost"
             onClick={handleClear}
+            disabled={loading}
           >
             <X />
           </Button>
@@ -199,8 +208,12 @@ const ImportExcelForm = ({
           <p className="text-sm text-green-600">File selected: {file.name}</p>
         )}
       </div>
-      <Button className="w-full cursor-pointer" type="submit" disabled={!file}>
-        Submit
+      <Button
+        className="w-full cursor-pointer"
+        type="submit"
+        disabled={!file || loading}
+      >
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit"}
       </Button>
     </form>
   );

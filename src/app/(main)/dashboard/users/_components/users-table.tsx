@@ -5,7 +5,7 @@ import { createHeader, DataTable } from "@/components/ui/datatable";
 import { GetUsersResult } from "@/lib/actions/users";
 import { FetchLimit } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Download, Plus } from "lucide-react";
+import { Download, FileDown, Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -13,6 +13,7 @@ import ConfirmDeleteUser from "./confirm-delete";
 import { GetRolesResult } from "@/lib/actions/roles";
 import UserForm from "./user-form";
 import { Badge } from "@/components/ui/badge";
+import ImportExcelForm from "./import-excel-form";
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
@@ -48,17 +49,30 @@ const UsersActions = ({ roles }: { roles: GetRolesResult["roles"] }) => {
     });
   };
 
-  const openDownloadTemplateModal = () => {
+  const downloadTemplateModal = () => {
     const link = document.createElement("a");
     link.href = "/templates/account_creation_template.xlsx";
     link.download = "account_creation_template.xlsx";
     link.click();
   };
+
+  const hanldeImportExcel = () => {
+    dialog.open({
+      title: "Import Excel",
+      children: <ImportExcelForm closeModal={() => dialog.closeAll()} />,
+      size: "md",
+    });
+  };
+
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="outline" onClick={openDownloadTemplateModal}>
-        <Download className="h-4 w-4 mr-2" />
+    <div className="flex items-center gap-4">
+      <Button variant="outline" onClick={downloadTemplateModal}>
+        <FileDown className="h-4 w-4 mr-2" />
         Download Template
+      </Button>
+      <Button variant="outline" onClick={hanldeImportExcel}>
+        <Download className="h-4 w-4 mr-2" />
+        Import excel
       </Button>
       <Button variant="outline" onClick={openAddUserModal}>
         <Plus className="h-4 w-4 mr-2" />

@@ -245,12 +245,26 @@ export function UsersTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
+  
+  // Query for paginated users (for table display)
   const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
     queryKey: ["users", page, search, pageSize],
     queryFn: () => getUsers({ 
       page, 
       search,
       limit: pageSize
+    }),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
+
+  // Query for all users (for actions)
+  const { data: allUsersData } = useQuery({
+    queryKey: ["users", "all"],
+    queryFn: () => getUsers({ 
+      page: 1,
+      search: "",
+      limit: 1000 // Large enough to get all users
     }),
     staleTime: 0,
     refetchOnWindowFocus: false,
@@ -292,6 +306,7 @@ export function UsersTable() {
   }
 
   const users = usersData?.users || [];
+  const allUsers = allUsersData?.users || [];
   const total = usersData?.total || 0;
 
   return (
@@ -314,7 +329,7 @@ export function UsersTable() {
         enableFiltering={true}
         onSearch={handleSearch}
         searchValue={search}
-        actions={<UsersActions roles={rolesData?.roles || []} users={users} />}
+        actions={<UsersActions roles={rolesData?.roles || []} users={allUsers} />}
         rowActions={(row) => <ActionsMenu row={row} roles={rolesData?.roles || []} />}
         actionsColumnWidth={40}
       />

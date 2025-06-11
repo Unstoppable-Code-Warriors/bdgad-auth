@@ -64,7 +64,11 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "phone",
     header: "Phone",
-    cell: ({ row }) =>(row.original?.metadata as Record<string, string>)?.["phone"] || "-",
+    cell: ({ row }) => (
+      <div className="max-w-[100px] truncate" title={(row.original?.metadata as Record<string, string>)?.["phone"] || "-"}>
+        {(row.original?.metadata as Record<string, string>)?.["phone"] || "-"}
+      </div>
+    )
   },
   {
     accessorKey: "address",

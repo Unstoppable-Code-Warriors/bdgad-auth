@@ -171,10 +171,18 @@ const ImportExcelForm = ({
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setLoading(false);
       closeModal();
+      console.log("processedData from call apiii", processedData);
+     
       await toast.promise(createUsers(processedData), {
         loading: "Creating users...",
         success: `Excel file parsed successfully. ${processedData.length} valid account(s) found.`,
-        error: "Failed to create users. Please try again.",
+        error: (err) => {
+          // Check if it's a duplicate email error
+          if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
+            return "One or more email addresses already exist in the system. Please check your data and try again.";
+          }
+          return "Failed to create users. Please try again.";
+        },
       });
       // Invalidate and refetch users data
       await queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -182,9 +190,14 @@ const ImportExcelForm = ({
     } catch (err) {
       setLoading(false);
       console.error("Error reading Excel file:", err);
-      toast.error(
-        "Failed to read Excel file. Please check if the file is corrupted or in correct format."
-      );
+      // Check if it's a duplicate email error
+      if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
+        toast.error("One or more email addresses already exist in the system. Please check your data and try again.");
+      } else {
+        toast.error(
+          "Failed to read Excel file. Please check if the file is corrupted or in correct format."
+        );
+      }
     }
   };
 

@@ -55,6 +55,7 @@ interface DataTableProps<TData, TValue> {
 	total?: number
 	page?: number
 	onPageChange?: (page: number) => void
+	onPageSizeChange?: (pageSize: number) => void
 	actionsColumnWidth?: number
 	onSearch?: (value: string) => void
 	searchValue?: string
@@ -77,6 +78,7 @@ export function DataTable<TData, TValue>({
 	total,
 	page,
 	onPageChange,
+	onPageSizeChange,
 	actionsColumnWidth,
 	onSearch,
 	searchValue,
@@ -230,6 +232,14 @@ export function DataTable<TData, TValue>({
 		}
 	}
 
+	const handlePageSizeChange = (newSize: number) => {
+		if (onPageSizeChange) {
+			onPageSizeChange(newSize)
+		} else if (!isExternalPagination) {
+			table.setPageSize(newSize)
+		}
+	}
+
 	// Get current page for display
 	const displayPage = isExternalPagination
 		? externalCurrentPage
@@ -373,7 +383,20 @@ export function DataTable<TData, TValue>({
 
 			{/* Pagination */}
 			{enablePagination && displayTotalPages > 0 && (
-				<div className="flex items-center justify-end space-x-2 py-4">
+				<div className="flex items-center justify-between space-x-2 py-4">
+					<div className="flex items-center space-x-2">
+						<select
+							value={pageSize}
+							onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+							className="h-8 rounded border border-input bg-background px-2 text-sm"
+						>
+							{[10, 20, 30, 40, 50].map((size) => (
+								<option key={size} value={size}>
+									{size} rows
+								</option>
+							))}
+						</select>
+					</div>
 					<div className="flex items-center space-x-2">
 						<Pagination
 							total={displayTotalPages}

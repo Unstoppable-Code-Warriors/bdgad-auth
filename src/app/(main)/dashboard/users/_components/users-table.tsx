@@ -240,15 +240,16 @@ export function UsersTable() {
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState(10);
   const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
-    queryKey: ["users", page, search],
+    queryKey: ["users", page, search, pageSize],
     queryFn: () => getUsers({ 
       page, 
       search,
-      limit: 10
+      limit: pageSize
     }),
-    staleTime: 0, // Consider data stale immediately
-    refetchOnWindowFocus: false, // Don't refetch on window focus
+    staleTime: 0,
+    refetchOnWindowFocus: false,
   });
 
   const { data: rolesData, isLoading: isLoadingRoles, error: rolesError } = useQuery({
@@ -263,6 +264,11 @@ export function UsersTable() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setPage(1); // Reset to first page when changing page size
   };
 
   const error = usersError || rolesError;
@@ -286,13 +292,19 @@ export function UsersTable() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-gray-500">
+          Total: {total} {total === 1 ? 'user' : 'users'}
+        </div>
+      </div>
       <DataTable
         columns={columns}
         data={users}
         total={total}
         page={page}
-        pageSize={10}
+        pageSize={pageSize}
         onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
         searchKey="name"
         searchPlaceholder="Search by name or email..."
         enableFiltering={true}

@@ -1,6 +1,9 @@
 import { Context, Next } from "hono"
 import { verify } from "hono/jwt"
 import { JWTPayload } from "../types"
+import { db } from "../../db/drizzle"
+import { users } from "../../db/schema"
+import { eq } from "drizzle-orm"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key"
 
@@ -21,6 +24,17 @@ export const jwtAuth = async (c: Context, next: Next) => {
 
 			// Type assertion for our custom payload structure
 			const userPayload = payload as unknown as JWTPayload
+
+			// Check if user is still active
+			const [user] = await db
+				.select()
+				.from(users)
+				.where(eq(users.id, parseInt(userPayload.sub)))
+				.limit(1)
+
+			if (!user || user.status !== "active") {
+				return c.json({ error: "Account is not active" }, 401)
+			}
 
 			// Add user info to context
 			c.set("user", {

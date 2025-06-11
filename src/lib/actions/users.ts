@@ -264,6 +264,7 @@ async function updateUserCore({
   name,
   metadata,
   roleIds,
+  status,
 }: {
   id: number;
   email?: string;
@@ -271,6 +272,7 @@ async function updateUserCore({
   name?: string;
   metadata?: Record<string, any>;
   roleIds?: number[];
+  status?: "active" | "inactive";
 }) {
   const result = await db.transaction(async (tx) => {
     // Prepare update data
@@ -279,6 +281,7 @@ async function updateUserCore({
     if (email !== undefined) updateData.email = email;
     if (name !== undefined) updateData.name = name;
     if (metadata !== undefined) updateData.metadata = metadata;
+    if (status !== undefined) updateData.status = status;
     if (password !== undefined) {
       updateData.password = await bcrypt.hash(password, 12);
     }

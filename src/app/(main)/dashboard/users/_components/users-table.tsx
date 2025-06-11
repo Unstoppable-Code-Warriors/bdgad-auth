@@ -5,7 +5,7 @@ import { createHeader, DataTable } from "@/components/ui/datatable";
 import { GetUsersResult } from "@/lib/actions/users";
 import { FetchLimit } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Download, FileDown, Plus } from "lucide-react";
+import { Download, FileDown, Plus, Ban, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import ImportExcelForm from "./import-excel-form";
 import ConfirmResetPassword from "./confirm-reset-password";
 import UserDetailModal from "./user-detail-modal";
+import ConfirmBan from "./confirm-ban";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "@/lib/actions/users";
@@ -156,6 +157,14 @@ const ActionsMenu = ({
     });
   };
 
+  const openBanUserDialog = () => {
+    dialog.open({
+      title: "Ban User",
+      children: <ConfirmBan onClose={() => dialog.closeAll()} row={row} />,
+      onClose: () => dialog.closeAll(),
+    });
+  };
+
   return (
     <>
       <DropdownMenuItem onClick={openUserDetailModal}>View Detail</DropdownMenuItem>
@@ -163,7 +172,19 @@ const ActionsMenu = ({
       <DropdownMenuItem onClick={openConfirmResetPasswordDialog}>
         Reset Password
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={openConfirmDeleteDialog}>
+      {row.original.status === "active" ? (
+        <DropdownMenuItem onClick={openBanUserDialog}>
+          <Ban className="mr-2 h-4 w-4" />
+          Ban User
+        </DropdownMenuItem>
+      ) : (
+        <DropdownMenuItem onClick={openBanUserDialog}>
+          <Ban className="mr-2 h-4 w-4" />
+          Unban User
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem onClick={openConfirmDeleteDialog} disabled={row.original.status === "active"}>
+        <Trash2 className="mr-2 h-4 w-4" />
         Delete
       </DropdownMenuItem>
     </>

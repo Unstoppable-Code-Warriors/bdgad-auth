@@ -1,24 +1,25 @@
 import { deleteUser, GetUsersResult } from "@/lib/actions/users"
 import { Row } from "@tanstack/react-table"
 import { useDialog } from "@/hooks/use-dialog"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+
 const ConfirmDeleteUser = ({
 	row,
 }: {
 	row: Row<GetUsersResult["users"][0]>
 }) => {
 	const dialog = useDialog()
-	const router = useRouter()
+	const queryClient = useQueryClient()
 	const [isLoading, setIsLoading] = useState(false)
 
 	const handleDelete = async () => {
 		try {
 			setIsLoading(true)
 			await deleteUser({ id: row.original.id })
-			router.refresh()
+			await queryClient.invalidateQueries({ queryKey: ["users"] })
 			dialog.closeAll()
 			toast.success("User deleted!")
 		} catch (error) {

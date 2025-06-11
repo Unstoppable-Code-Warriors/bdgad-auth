@@ -14,6 +14,7 @@ import { GetRolesResult } from "@/lib/actions/roles";
 import UserForm from "./user-form";
 import { Badge } from "@/components/ui/badge";
 import ImportExcelForm from "./import-excel-form";
+import ConfirmResetPassword from "./confirm-reset-password";
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
@@ -135,9 +136,20 @@ const ActionsMenu = ({
       children: <ConfirmDeleteUser row={row} />,
     });
   };
+
+  const openConfirmResetPasswordDialog = () => {
+    dialog.open({
+      title: "Reset Password",
+      children: <ConfirmResetPassword closeModal={dialog.closeAll} row={row} />,
+    });
+  };
+
   return (
     <>
       <DropdownMenuItem onClick={openEditUserModal}>Edit</DropdownMenuItem>
+      <DropdownMenuItem onClick={openConfirmResetPasswordDialog}>
+        Reset Password
+      </DropdownMenuItem>
       <DropdownMenuItem onClick={openConfirmDeleteDialog}>
         Delete
       </DropdownMenuItem>

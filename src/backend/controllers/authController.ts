@@ -59,6 +59,7 @@ export const login = async (c: ValidatedContext) => {
 			.select({
 				roleId: roles.id,
 				roleName: roles.name,
+				roleCode: roles.code,
 			})
 			.from(userRoles)
 			.innerJoin(roles, eq(userRoles.roleId, roles.id))
@@ -67,6 +68,7 @@ export const login = async (c: ValidatedContext) => {
 		const rolesList = userRoleData.map((role) => ({
 			id: role.roleId,
 			name: role.roleName,
+			code: role.roleCode,
 		}))
 
 		// Create JWT payload
@@ -142,6 +144,7 @@ export const getUserInfo = async (c: ValidatedContext) => {
 				roleId: roles.id,
 				roleName: roles.name,
 				roleDescription: roles.description,
+				roleCode: roles.code,
 			})
 			.from(userRoles)
 			.innerJoin(roles, eq(userRoles.roleId, roles.id))
@@ -150,6 +153,7 @@ export const getUserInfo = async (c: ValidatedContext) => {
 		const rolesList = userRoleData.map((role) => ({
 			id: role.roleId,
 			name: role.roleName,
+			code: role.roleCode || "",
 		}))
 
 		const userInfo: UserInfo = {

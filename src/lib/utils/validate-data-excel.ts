@@ -25,17 +25,18 @@ export type ValidationErrors = {
 export const EXPECTED_COLUMNS = ["Email", "Name", "Role", "Phone", "Address"];
 export const REQUIRED_COLUMNS = ["Email", "Name", "Role"];
 export const MAX_ACCOUNTS_LIMIT = 50;
+export const TEMPLATE_SHEET_NAME = "table";
 
 // Worksheet validation functions
 export const validateWorksheetExists = (
   workbook: XLSX.WorkBook,
-  sheetName: string = "table"
+  sheetName: string = TEMPLATE_SHEET_NAME
 ): ValidationResult => {
   const worksheet = workbook.Sheets[sheetName];
   if (!worksheet) {
     return {
       isValid: false,
-      error: `Cannot find sheet named "${sheetName}".`,
+      error: `Cannot find sheet named "${sheetName}". Please use the correct template.`,
     };
   }
   return { isValid: true };
@@ -57,6 +58,7 @@ export const validateColumns = (
 ): ValidationResult => {
   const headerRow = XLSX.utils.sheet_to_json(worksheet, {
     header: 1,
+    range: 0, // Only read the first row
   })[0] as string[];
   const actualColumns = headerRow || [];
 
@@ -71,27 +73,15 @@ export const validateColumns = (
     };
   }
 
-  // Check missing optional columns
-  const missingOptionalColumns = EXPECTED_COLUMNS.filter(
-    (col) => !actualColumns.includes(col) && !REQUIRED_COLUMNS.includes(col)
+  // Check if required columns are in correct order (A to E)
+  const firstFiveColumns = actualColumns.slice(0, 5);
+  const hasAllRequiredColumns = REQUIRED_COLUMNS.every(col => 
+    firstFiveColumns.includes(col)
   );
-  if (missingOptionalColumns.length > 0) {
+  if (!hasAllRequiredColumns) {
     return {
       isValid: false,
-      error: `Missing column(s): ${missingOptionalColumns.join(", ")}`,
-    };
-  }
-
-  // Check extra columns
-  const extraColumns = actualColumns.filter(
-    (col) => !EXPECTED_COLUMNS.includes(col)
-  );
-  if (extraColumns.length > 0) {
-    return {
-      isValid: false,
-      error: `Unexpected column(s) found: ${extraColumns.join(
-        ", "
-      )}. Only allowed columns: ${EXPECTED_COLUMNS.join(", ")}`,
+      error: `Required columns must be in the first 5 columns (A to E) of the template.`,
     };
   }
 
@@ -110,13 +100,15 @@ export const validateName = (name: string): ValidationResult => {
       error: "Name must be between 3-50 characters",
     };
   }
-  if (trimmedName.includes(" ")) {
-    return { isValid: false, error: "Name cannot contain spaces" };
+  // Check for multiple consecutive spaces
+  if (/\s{2,}/.test(trimmedName)) {
+    return { isValid: false, error: "Name cannot contain multiple consecutive spaces" };
   }
-  if (!/^[a-zA-Z0-9_]+$/.test(trimmedName)) {
+  // Allow Vietnamese characters, letters, numbers, single spaces, and specific special characters
+  if (!/^[a-zA-ZÀ-ỹ0-9\s\-_]+$/.test(trimmedName)) {
     return {
       isValid: false,
-      error: "Name can only contain letters, numbers, and underscores",
+      error: "Name can only contain letters (including Vietnamese), numbers, single spaces, hyphens (-), and underscores (_)",
     };
   }
   return { isValid: true };
@@ -147,6 +139,47 @@ export const validateRole = (role: any): ValidationResult => {
     return {
       isValid: false,
       error: "Role must be a number between 1 and 5",
+    };
+  }
+  return { isValid: true };
+};
+
+export const validatePhone = (phone: string): ValidationResult => {
+  // Phone is optional
+  if (!phone) {
+    return { isValid: true };
+  }
+  
+  const phoneStr = String(phone).trim();
+  // Must be exactly 10 digits
+  if (!/^\d{10}$/.test(phoneStr)) {
+    return {
+      isValid: false,
+      error: "Phone number must be exactly 10 digits",
+    };
+  }
+  return { isValid: true };
+};
+
+export const validateAddress = (address: string): ValidationResult => {
+  // Address is optional
+  if (!address) {
+    return { isValid: true };
+  }
+  
+  const addressStr = String(address).trim();
+  if (addressStr.length > 200) {
+    return {
+      isValid: false,
+      error: "Address must not exceed 200 characters",
+    };
+  }
+  
+  // Allow letters, numbers, spaces, and specific special characters
+  if (!/^[a-zA-ZÀ-ỹ0-9\s\(\)\|\/\-\,\.]+$/.test(addressStr)) {
+    return {
+      isValid: false,
+      error: "Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: ( ) | / - , .",
     };
   }
   return { isValid: true };
@@ -201,8 +234,24 @@ export const validateRow = (
   }
   cleanedRow.Role = Number(row.Role);
 
-  // Handle optional fields
+  // Validate Phone
+  const phoneValidation = validatePhone(row.Phone);
+  if (!phoneValidation.isValid) {
+    return {
+      isValid: false,
+      error: `Row ${rowIndex}: ${phoneValidation.error}`,
+    };
+  }
   cleanedRow.Phone = row.Phone ? String(row.Phone).trim() : "";
+
+  // Validate Address
+  const addressValidation = validateAddress(row.Address);
+  if (!addressValidation.isValid) {
+    return {
+      isValid: false,
+      error: `Row ${rowIndex}: ${addressValidation.error}`,
+    };
+  }
   cleanedRow.Address = row.Address ? String(row.Address).trim() : "";
 
   return {
@@ -290,9 +339,10 @@ export const validateEmailNotExistInSystem = (
     existingUsers.some((user) => user.email === item.Email)
   );
   if (duplicatedEmails.length > 0) {
+    const duplicateEmailList = duplicatedEmails.map(item => item.Email).join(", ");
     return {
       isValid: false,
-      error: "Email already exists in the system.",
+      error: `The following email(s) already exist in the system: ${duplicateEmailList}`,
     };
   }
   return { isValid: true };

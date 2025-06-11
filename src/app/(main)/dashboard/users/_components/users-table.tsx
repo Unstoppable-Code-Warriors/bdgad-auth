@@ -5,7 +5,7 @@ import { createHeader, DataTable } from "@/components/ui/datatable";
 import { GetUsersResult } from "@/lib/actions/users";
 import { FetchLimit } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Download, FileDown, Plus, Ban, Trash2 } from "lucide-react";
+import { Download, FileDown, Plus, Ban, Trash2, Eye, Pencil, Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -33,6 +33,11 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "email",
     header: "Email",
+    cell: ({ row }) => (
+      <div className="max-w-[130px] " title={row.original.email}>
+        {row.original.email}
+      </div>
+    ),
   },
   {
     accessorKey: "status",
@@ -49,7 +54,7 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     accessorKey: "roles",
     header: "Role",
     cell: ({ row }) => (
-      <div className="flex gap-1">
+      <div className="flex gap-1 max-w-[80px]">
         {row.original.roles.map((role) => (
           <Badge key={role.id}>{role.name}</Badge>
         ))}
@@ -57,9 +62,29 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     ),
   },
   {
+    accessorKey: "phone",
+    header: "Phone",
+    cell: ({ row }) =>(row.original?.metadata as Record<string, string>)?.["phone"] || "-",
+  },
+  {
+    accessorKey: "address",
+    header: "Address",
+    cell: ({ row }) => (
+      <div className="max-w-[100px] truncate" title={(row.original?.metadata as Record<string, string>)?.["address"] || "-"}>
+        {(row.original?.metadata as Record<string, string>)?.["address"] || "-"}
+      </div>
+    ),
+  },
+  {
     accessorKey: "createdAt",
     header: "Created At",
-    cell: ({ row }) => format(new Date(row.original.createdAt), "PPP"),
+    cell: ({ row }) => (
+      <div>
+        <div className="max-w-[90px]">
+          {format(new Date(row.original.createdAt), "PPP")}
+        </div>
+      </div>
+    ),
   },
 ];
 
@@ -100,7 +125,7 @@ const UsersActions = ({
           closeModal={() => dialog.closeAll()}
         />
       ),
-      size: "md",
+      size: "xl",
     });
   };
 
@@ -172,11 +197,22 @@ const ActionsMenu = ({
   return (
     <>
       <DropdownMenuItem onClick={openUserDetailModal}>
-        View Detail
+       <div className="flex items-center gap-1">
+       <Eye className="mr-2 h-4 w-4" />
+       View Detail
+       </div>
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={openEditUserModal}>Edit</DropdownMenuItem>
+      <DropdownMenuItem onClick={openEditUserModal}>
+        <div className="flex items-center gap-1">
+          <Pencil className="mr-2 h-4 w-4" />
+          Edit
+        </div>
+      </DropdownMenuItem>
       <DropdownMenuItem onClick={openConfirmResetPasswordDialog}>
-        Reset Password
+        <div className="flex items-center gap-1">
+          <Lock className="mr-2 h-4 w-4" />
+          Reset Password
+        </div>
       </DropdownMenuItem>
       {row.original.status === "active" ? (
         <DropdownMenuItem onClick={openBanUserDialog}>
@@ -201,11 +237,18 @@ const ActionsMenu = ({
 };
 
 export function UsersTable() {
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
     queryKey: ["users", page, search],
-    queryFn: () => getUsers({ page, search }),
+    queryFn: () => getUsers({ 
+      page, 
+      search,
+      limit: 10
+    }),
+    staleTime: 0, // Consider data stale immediately
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
   const { data: rolesData, isLoading: isLoadingRoles, error: rolesError } = useQuery({
@@ -216,6 +259,10 @@ export function UsersTable() {
   const handleSearch = (value: string) => {
     setSearch(value);
     setPage(1); // Reset to first page when searching
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   const error = usersError || rolesError;
@@ -234,21 +281,24 @@ export function UsersTable() {
     );
   }
 
+  const users = usersData?.users || [];
+  const total = usersData?.total || 0;
+
   return (
     <div className="space-y-4">
       <DataTable
         columns={columns}
-        data={usersData?.users || []}
-        total={usersData?.total || 0}
+        data={users}
+        total={total}
         page={page}
         pageSize={10}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
         searchKey="name"
         searchPlaceholder="Search by name or email..."
         enableFiltering={true}
         onSearch={handleSearch}
         searchValue={search}
-        actions={<UsersActions roles={rolesData?.roles || []} users={usersData?.users || []} />}
+        actions={<UsersActions roles={rolesData?.roles || []} users={users} />}
         rowActions={(row) => <ActionsMenu row={row} roles={rolesData?.roles || []} />}
         actionsColumnWidth={40}
       />

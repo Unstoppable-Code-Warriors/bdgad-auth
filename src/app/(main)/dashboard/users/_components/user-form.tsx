@@ -51,7 +51,6 @@ export function UserForm({ action, row, roles }: UserFormProps) {
       
         if (trimmedValue.length === 0) return "Name is required";
       
-     
         const validPattern = /^[a-zA-ZÀ-ỹ0-9]+([ _-]?[a-zA-ZÀ-ỹ0-9]+)*$/u;
       
         if (!validPattern.test(trimmedValue)) {
@@ -72,7 +71,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
       phone: (value: string) => {
         const trimmedValue = value.trim();
         if (trimmedValue && !/^\+?[\d\s-]{10,}$/.test(trimmedValue)) {
-          return "Invalid phone number format";
+          return "Phone number must be at least 10 digits";
         }
         return null;
       },
@@ -133,7 +132,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
     <form onSubmit={form.onSubmit(handleSubmit)}>
       <div className="grid gap-4 py-4">
         <div className="grid gap-2">
-          <Label htmlFor="name">Name*</Label>
+          <div>Name<span className="text-red-500">*</span></div>
           <Input
             id="name"
             {...form.getInputProps("name")}
@@ -145,7 +144,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="email">Email*</Label>
+          <div>Email<span className="text-red-500">*</span></div>
           <Input
             id="email"
             {...form.getInputProps("email")}
@@ -181,7 +180,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="role">Role*</Label>
+          <div>Role<span className="text-red-500">*</span></div>
           <Select
             value={form.values.roleId}
             onValueChange={(value: string) => form.setFieldValue("roleId", value)}

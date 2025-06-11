@@ -2,6 +2,7 @@
 export interface Role {
   id: number;
   name: string;
+  code: string;
 }
 
 // Context Variables type for Hono

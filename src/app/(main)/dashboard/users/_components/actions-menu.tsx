@@ -22,7 +22,6 @@ export function ActionsMenu({ row, roles }: ActionsMenuProps) {
   const [showDelete, setShowDelete] = useState(false);
   const [showBan, setShowBan] = useState(false);
 
-console.log("roles from actions menu", roles);
 
   return (
     <>
@@ -36,7 +35,7 @@ console.log("roles from actions menu", roles);
         Reset Password
       </DropdownMenuItem>
       {row.original.status === "active" ? (
-        <DropdownMenuItem onClick={() => setShowBan(true)}>
+        <DropdownMenuItem className="text-red-500" onClick={() => setShowBan(true)}>
           Ban User   
         </DropdownMenuItem>
       ) : (

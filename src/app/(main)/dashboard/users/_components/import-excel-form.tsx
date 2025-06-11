@@ -20,6 +20,8 @@ import {
   formatValidationErrors,
 } from "@/lib/utils/validate-data-excel";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+
 interface ImportExcelFormProps {
   closeModal: () => void;
   users: GetUsersResult["users"];
@@ -32,10 +34,13 @@ const ImportExcelForm = ({
   roles,
 }: ImportExcelFormProps) => {
   const [error, setError] = useState<string | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -59,6 +64,7 @@ const ImportExcelForm = ({
   const handleClear = () => {
     setFile(null);
     setError(null);
+    setErrorText(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -68,9 +74,10 @@ const ImportExcelForm = ({
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+    setErrorText(null);
 
     if (!file) {
-      setError("Please select an Excel file before submitting.");
+      setErrorText("Please select an Excel file before submitting.");
       return;
     }
 
@@ -82,7 +89,7 @@ const ImportExcelForm = ({
       // Validate worksheet exists
       const worksheetValidation = validateWorksheetExists(workbook, "table");
       if (!worksheetValidation.isValid) {
-        toast.error(worksheetValidation.error!);
+        setErrorText(worksheetValidation.error!);
         return;
       }
 
@@ -92,14 +99,14 @@ const ImportExcelForm = ({
       // Validate data is not empty
       const dataValidation = validateDataNotEmpty(jsonData);
       if (!dataValidation.isValid) {
-        toast.error(dataValidation.error!);
+        setErrorText(dataValidation.error!);
         return;
       }
 
       // Validate columns
       const columnValidation = validateColumns(worksheet);
       if (!columnValidation.isValid) {
-        toast.error(columnValidation.error!);
+        setErrorText(columnValidation.error!);
         return;
       }
 
@@ -109,21 +116,21 @@ const ImportExcelForm = ({
       // Show validation errors if any
       if (validationErrors.hasErrors) {
         const errorMessage = formatValidationErrors(validationErrors.errors);
-        toast.error(errorMessage);
+        setErrorText(errorMessage);
         return;
       }
 
       // Validate no data after processing
       const noDataValidation = validateNoDataAfterProcessing(processedData);
       if (!noDataValidation.isValid) {
-        toast.error(noDataValidation.error!);
+        setErrorText(noDataValidation.error!);
         return;
       }
 
       // Validate account limit
       const accountLimitValidation = validateAccountLimit(processedData);
       if (!accountLimitValidation.isValid) {
-        toast.error(accountLimitValidation.error!);
+        setErrorText(accountLimitValidation.error!);
         return;
       }
 
@@ -133,7 +140,7 @@ const ImportExcelForm = ({
         users
       );
       if (!emailExistsValidation.isValid) {
-        toast.error(emailExistsValidation.error!);
+        setErrorText(emailExistsValidation.error!);
         return;
       }
 
@@ -146,6 +153,7 @@ const ImportExcelForm = ({
       return convertedUsers;
     } catch (err) {
       console.error("Error reading Excel file:", err);
+      setErrorText("Failed to read Excel file. Please check if the file is corrupted or in correct format.");
     }
   };
 
@@ -168,6 +176,8 @@ const ImportExcelForm = ({
         success: `Excel file parsed successfully. ${processedData.length} valid account(s) found.`,
         error: "Failed to create users. Please try again.",
       });
+      // Invalidate and refetch users data
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
       router.refresh();
     } catch (err) {
       setLoading(false);
@@ -204,7 +214,8 @@ const ImportExcelForm = ({
           </Button>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
-        {file && !error && (
+        {errorText && <p className="text-sm text-red-500">{errorText}</p>}
+        {file && !error && !errorText && (
           <p className="text-sm text-green-600">File selected: {file.name}</p>
         )}
       </div>

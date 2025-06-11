@@ -56,6 +56,7 @@ interface DataTableProps<TData, TValue> {
 	total?: number
 	page?: number
 	onPageChange?: (page: number) => void
+	actionsColumnWidth?: number
 }
 
 export function DataTable<TData, TValue>({
@@ -76,6 +77,7 @@ export function DataTable<TData, TValue>({
 	total,
 	page,
 	onPageChange,
+	actionsColumnWidth,
 }: DataTableProps<TData, TValue>) {
 	// Determine if pagination is externally controlled
 	const isExternalPagination =
@@ -139,10 +141,11 @@ export function DataTable<TData, TValue>({
 					</DropdownMenu>
 				</div>
 			),
+			size: actionsColumnWidth || 50,
 		}
 
 		return [...columns, actionsColumn]
-	}, [columns, rowActions])
+	}, [columns, rowActions, actionsColumnWidth])
 
 	const table = useReactTable({
 		data: data || [],

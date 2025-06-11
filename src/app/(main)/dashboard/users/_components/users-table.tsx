@@ -15,15 +15,26 @@ import UserForm from "./user-form";
 import { Badge } from "@/components/ui/badge";
 import ImportExcelForm from "./import-excel-form";
 import ConfirmResetPassword from "./confirm-reset-password";
+import UserDetailModal from "./user-detail-modal";
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "name",
     header: createHeader("Name"),
+    cell: ({ row }) => (
+      <div className="max-w-[150px] truncate" title={row.original.name}>
+        {row.original.name}
+      </div>
+    ),
   },
   {
     accessorKey: "email",
     header: createHeader("Email"),
+    cell: ({ row }) => (
+      <div className="max-w-[200px] truncate" title={row.original.email}>
+        {row.original.email}
+      </div>
+    ),
   },
   {
     accessorKey: "roles",
@@ -40,18 +51,38 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "status",
     header: createHeader("Status"),
+    cell: ({ row }) => {
+      const status = row.original.status;
+      return (
+        <Badge variant={status === "active" ? "default" : "secondary"}>
+          {status}
+        </Badge>
+      );
+    },
   },
   {
     accessorKey: "phone",
     header: createHeader("Phone"),
-    cell: ({ row }) =>
-      (row.original?.metadata as Record<string, string>)?.["phone"] || "-",
+    cell: ({ row }) => {
+      const phone = (row.original?.metadata as Record<string, string>)?.["phone"] || "-";
+      return (
+        <div className="max-w-[120px] truncate" title={phone}>
+          {phone}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "address",
     header: createHeader("Address"),
-    cell: ({ row }) =>
-      (row.original?.metadata as Record<string, string>)?.["address"] || "-",
+    cell: ({ row }) => {
+      const address = (row.original?.metadata as Record<string, string>)?.["address"] || "-";
+      return (
+        <div className="max-w-[100px] truncate" title={address}>
+          {address}
+        </div>
+      );
+    },
   },
 ];
 
@@ -140,12 +171,20 @@ const ActionsMenu = ({
   const openConfirmResetPasswordDialog = () => {
     dialog.open({
       title: "Reset Password",
-      children: <ConfirmResetPassword closeModal={dialog.closeAll} row={row} />,
+      children: <ConfirmResetPassword row={row} closeModal={() => dialog.closeAll()} />,
+    });
+  };
+
+  const openUserDetailModal = () => {
+    dialog.open({
+      title: "User Details",
+      children: <UserDetailModal row={row} />,
     });
   };
 
   return (
     <>
+      <DropdownMenuItem onClick={openUserDetailModal}>View Detail</DropdownMenuItem>
       <DropdownMenuItem onClick={openEditUserModal}>Edit</DropdownMenuItem>
       <DropdownMenuItem onClick={openConfirmResetPasswordDialog}>
         Reset Password
@@ -182,6 +221,7 @@ const UsersTable = ({
       onPageChange={handlePageChange}
       actions={<UsersActions roles={roles} users={users} />}
       rowActions={(row) => <ActionsMenu row={row} roles={roles} />}
+      actionsColumnWidth={40}
     />
   );
 };

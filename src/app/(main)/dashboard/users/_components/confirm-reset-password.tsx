@@ -17,14 +17,14 @@ const ConfirmResetPassword = ({ row, closeModal }: ConfirmResetPasswordProps) =>
   const handleResetPassword = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/auth/forgot-password", {
+      const response = await fetch("/api/v1/auth/forgot-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: row.original.email,
-          redirectUrl: `${window.location.origin}/reset-password`,
+          redirectUrl: `https://bdgad.bio/auth`,
         }),
       });
 
@@ -34,6 +34,7 @@ const ConfirmResetPassword = ({ row, closeModal }: ConfirmResetPasswordProps) =>
         throw new Error(data.error || "Failed to reset password");
       }
 
+      closeModal();
       toast.success("Password reset email has been sent to the user.");
     } catch (error) {
       toast.error("Failed to reset password");

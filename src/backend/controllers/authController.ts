@@ -311,48 +311,65 @@ export const forgotPassword = async (c: ValidatedContext) => {
 			.where(eq(users.email, email))
 			.limit(1)
 
-		// Always return success to prevent email enumeration attacks
-		// But only send email if user exists and is active
-		if (user.length > 0 && user[0].status === "active") {
-			const foundUser = user[0]
+		// Check if user exists
+		if (user.length === 0) {
+			return c.json({ 
+				error: "Email not found in the system",
+				details: "The provided email address is not registered in our system."
+			}, 500)
+		}
 
-			// Generate secure random token
-			const resetToken = crypto.randomBytes(32).toString("hex")
-			const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+		const foundUser = user[0]
 
-			// Store reset token in database
-			await db.insert(passwordResetTokens).values({
-				userId: foundUser.id,
-				token: resetToken,
-				expiresAt,
-				used: "false",
-			})
+		// Check if user is active
+		if (foundUser.status !== "active") {
+			return c.json({ 
+				error: "Account is not active",
+				details: "The account associated with this email is not active."
+			}, 500)
+		}
 
-			// Send password reset email
-			try {
-				await sendPasswordResetEmail(
-					redirectUrl,
-					foundUser.email,
-					resetToken,
-					foundUser.name
-				)
-			} catch (emailError) {
-				console.error(
-					"Failed to send password reset email:",
-					emailError
-				)
-				// Continue execution - don't reveal email sending failure to user
-			}
+		// Generate secure random token
+		const resetToken = crypto.randomBytes(32).toString("hex")
+		const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+
+		// Store reset token in database
+		await db.insert(passwordResetTokens).values({
+			userId: foundUser.id,
+			token: resetToken,
+			expiresAt,
+			used: "false",
+		})
+
+		// Send password reset email
+		try {
+			await sendPasswordResetEmail(
+				redirectUrl,
+				foundUser.email,
+				resetToken,
+				foundUser.name
+			)
+		} catch (emailError) {
+			console.error(
+				"Failed to send password reset email:",
+				emailError
+			)
+			return c.json({ 
+				error: "Failed to send password reset email",
+				details: "There was an error sending the password reset email. Please try again later."
+			}, 500)
 		}
 
 		return c.json({
 			success: true,
-			message:
-				"If an account with that email exists, a password reset link has been sent.",
+			message: "Password reset link has been sent to your email.",
 		})
 	} catch (error) {
 		console.error("Forgot password error:", error)
-		return c.json({ error: "Internal server error" }, 500)
+		return c.json({ 
+			error: "Internal server error",
+			details: "An unexpected error occurred while processing your request."
+		}, 500)
 	}
 }
 

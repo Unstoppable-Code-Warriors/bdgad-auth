@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import ConfirmDeleteUser from "./confirm-delete";
-import { GetRolesResult } from "@/lib/actions/roles";
+import { getRoles, GetRolesResult } from "@/lib/actions/roles";
 import UserForm from "./user-form";
 import { Badge } from "@/components/ui/badge";
 import ImportExcelForm from "./import-excel-form";
@@ -38,7 +38,9 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <Badge variant={row.original.status === "active" ? "default" : "secondary"}>
+      <Badge
+        variant={row.original.status === "active" ? "default" : "secondary"}
+      >
         {row.original.status}
       </Badge>
     ),
@@ -146,7 +148,9 @@ const ActionsMenu = ({
   const openConfirmResetPasswordDialog = () => {
     dialog.open({
       title: "Reset Password",
-      children: <ConfirmResetPassword row={row} closeModal={() => dialog.closeAll()} />,
+      children: (
+        <ConfirmResetPassword row={row} closeModal={() => dialog.closeAll()} />
+      ),
     });
   };
 
@@ -167,7 +171,9 @@ const ActionsMenu = ({
 
   return (
     <>
-      <DropdownMenuItem onClick={openUserDetailModal}>View Detail</DropdownMenuItem>
+      <DropdownMenuItem onClick={openUserDetailModal}>
+        View Detail
+      </DropdownMenuItem>
       <DropdownMenuItem onClick={openEditUserModal}>Edit</DropdownMenuItem>
       <DropdownMenuItem onClick={openConfirmResetPasswordDialog}>
         Reset Password
@@ -183,7 +189,10 @@ const ActionsMenu = ({
           Unban User
         </DropdownMenuItem>
       )}
-      <DropdownMenuItem onClick={openConfirmDeleteDialog} disabled={row.original.status === "active"}>
+      <DropdownMenuItem
+        onClick={openConfirmDeleteDialog}
+        disabled={row.original.status === "active"}
+      >
         <Trash2 className="mr-2 h-4 w-4" />
         Delete
       </DropdownMenuItem>
@@ -194,9 +203,14 @@ const ActionsMenu = ({
 export function UsersTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const { data, isLoading, error } = useQuery({
+  const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
     queryKey: ["users", page, search],
     queryFn: () => getUsers({ page, search }),
+  });
+
+  const { data: rolesData, isLoading: isLoadingRoles, error: rolesError } = useQuery({
+    queryKey: ["roles"],
+    queryFn: () => getRoles(),
   });
 
   const handleSearch = (value: string) => {
@@ -204,12 +218,17 @@ export function UsersTable() {
     setPage(1); // Reset to first page when searching
   };
 
+  const error = usersError || rolesError;
+  const isLoading = isLoadingUsers || isLoadingRoles;
+
   if (error) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          {error instanceof Error ? error.message : "An error occurred while loading users"}
+          {error instanceof Error
+            ? error.message
+            : "An error occurred while loading data"}
         </AlertDescription>
       </Alert>
     );
@@ -219,8 +238,8 @@ export function UsersTable() {
     <div className="space-y-4">
       <DataTable
         columns={columns}
-        data={data?.users || []}
-        total={data?.total || 0}
+        data={usersData?.users || []}
+        total={usersData?.total || 0}
         page={page}
         pageSize={10}
         onPageChange={setPage}
@@ -229,8 +248,8 @@ export function UsersTable() {
         enableFiltering={true}
         onSearch={handleSearch}
         searchValue={search}
-        actions={<UsersActions roles={[]} users={data?.users || []} />}
-        rowActions={(row) => <ActionsMenu row={row} roles={[]} />}
+        actions={<UsersActions roles={rolesData?.roles || []} users={usersData?.users || []} />}
+        rowActions={(row) => <ActionsMenu row={row} roles={rolesData?.roles || []} />}
         actionsColumnWidth={40}
       />
       {isLoading && (

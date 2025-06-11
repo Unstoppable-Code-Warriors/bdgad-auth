@@ -48,11 +48,18 @@ export function UserForm({ action, row, roles }: UserFormProps) {
     validate: {
       name: (value: string) => {
         const trimmedValue = value.trim();
+      
         if (trimmedValue.length === 0) return "Name is required";
-        if (!/^[a-zA-Z0-9\s]+$/.test(trimmedValue)) {
-          return "Name can only contain letters, numbers and spaces";
+      
+     
+        const validPattern = /^[a-zA-ZÀ-ỹ0-9]+([ _-]?[a-zA-ZÀ-ỹ0-9]+)*$/u;
+      
+        if (!validPattern.test(trimmedValue)) {
+          return "Name can only contain letters (including Vietnamese), numbers, single spaces, hyphens (-), and underscores (_)";
         }
+      
         if (trimmedValue.length > 50) return "Name must be 50 characters or less";
+      
         return null;
       },
       email: (value: string) => {

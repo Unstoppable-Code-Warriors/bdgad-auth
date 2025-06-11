@@ -2,7 +2,7 @@
 
 import { db } from "@/db/drizzle";
 import { users, userRoles, roles } from "@/db/schema";
-import { count, eq, getTableColumns } from "drizzle-orm";
+import { count, eq, getTableColumns, or, ilike } from "drizzle-orm";
 import { withAuth } from "@/lib/utils/auth";
 import bcrypt from "bcryptjs";
 import { FetchLimit } from "../constants";
@@ -37,17 +37,19 @@ type UserCreationResult = {
 async function getUsersCore({
   limit = FetchLimit.USERS,
   page = 1,
+  search,
 }: {
   limit?: number;
   page?: number;
+  search?: string;
 } = {}) {
   const offset = (page - 1) * limit;
 
   const { password, ...userColumns } = getTableColumns(users);
 
   const result = await db.transaction(async (tx) => {
-    // Get users with their roles
-    const usersWithRoles = await tx
+    // Build the base query
+    const baseQuery = tx
       .select({
         ...userColumns,
         roleId: userRoles.roleId,
@@ -56,9 +58,20 @@ async function getUsersCore({
       })
       .from(users)
       .leftJoin(userRoles, eq(users.id, userRoles.userId))
-      .leftJoin(roles, eq(userRoles.roleId, roles.id))
-      .limit(limit)
-      .offset(offset);
+      .leftJoin(roles, eq(userRoles.roleId, roles.id));
+
+    // Get users with their roles
+    const usersWithRoles = search
+      ? await baseQuery
+          .where(
+            or(
+              ilike(users.name, `%${search}%`),
+              ilike(users.email, `%${search}%`)
+            )
+          )
+          .limit(limit)
+          .offset(offset)
+      : await baseQuery.limit(limit).offset(offset);
 
     // Group roles by user
     const userMap = new Map<number, UserWithRoles>();
@@ -85,7 +98,18 @@ async function getUsersCore({
 
     const userList: UserWithRoles[] = Array.from(userMap.values());
 
-    const totalResult = await tx.select({ count: count() }).from(users);
+    // Get total count with search condition
+    const totalResult = search
+      ? await tx
+          .select({ count: count() })
+          .from(users)
+          .where(
+            or(
+              ilike(users.name, `%${search}%`),
+              ilike(users.email, `%${search}%`)
+            )
+          )
+      : await tx.select({ count: count() }).from(users);
 
     return {
       users: userList,

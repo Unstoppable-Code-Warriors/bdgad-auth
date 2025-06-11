@@ -16,73 +16,47 @@ import { Badge } from "@/components/ui/badge";
 import ImportExcelForm from "./import-excel-form";
 import ConfirmResetPassword from "./confirm-reset-password";
 import UserDetailModal from "./user-detail-modal";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getUsers } from "@/lib/actions/users";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { format } from "date-fns";
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "name",
-    header: createHeader("Name"),
-    cell: ({ row }) => (
-      <div className="max-w-[150px] truncate" title={row.original.name}>
-        {row.original.name}
-      </div>
-    ),
+    header: "Name",
   },
   {
     accessorKey: "email",
-    header: createHeader("Email"),
+    header: "Email",
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
     cell: ({ row }) => (
-      <div className="max-w-[200px] truncate" title={row.original.email}>
-        {row.original.email}
-      </div>
+      <Badge variant={row.original.status === "active" ? "default" : "secondary"}>
+        {row.original.status}
+      </Badge>
     ),
   },
   {
     accessorKey: "roles",
-    header: createHeader("Role"),
-    cell: ({ row }) => {
-      const role = row.original.roles[0];
-      return role ? (
-        <Badge>{role.name}</Badge>
-      ) : (
-        <span className="text-sm text-muted-foreground">No role</span>
-      );
-    },
+    header: "Role",
+    cell: ({ row }) => (
+      <div className="flex gap-1">
+        {row.original.roles.map((role) => (
+          <Badge key={role.id}>{role.name}</Badge>
+        ))}
+      </div>
+    ),
   },
   {
-    accessorKey: "status",
-    header: createHeader("Status"),
-    cell: ({ row }) => {
-      const status = row.original.status;
-      return (
-        <Badge variant={status === "active" ? "default" : "secondary"}>
-          {status}
-        </Badge>
-      );
-    },
-  },
-  {
-    accessorKey: "phone",
-    header: createHeader("Phone"),
-    cell: ({ row }) => {
-      const phone = (row.original?.metadata as Record<string, string>)?.["phone"] || "-";
-      return (
-        <div className="max-w-[120px] truncate" title={phone}>
-          {phone}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "address",
-    header: createHeader("Address"),
-    cell: ({ row }) => {
-      const address = (row.original?.metadata as Record<string, string>)?.["address"] || "-";
-      return (
-        <div className="max-w-[100px] truncate" title={address}>
-          {address}
-        </div>
-      );
-    },
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => format(new Date(row.original.createdAt), "PPP"),
   },
 ];
 
@@ -196,34 +170,55 @@ const ActionsMenu = ({
   );
 };
 
-const UsersTable = ({
-  users,
-  total,
-  roles,
-}: GetUsersResult & { roles: GetRolesResult["roles"] }) => {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const page = searchParams.get("page");
+export function UsersTable() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["users", page, search],
+    queryFn: () => getUsers({ page, search }),
+  });
 
-  const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("page", newPage.toString());
-    router.push(`?${params.toString()}`);
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
   };
 
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          {error instanceof Error ? error.message : "An error occurred while loading users"}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <DataTable
-      columns={columns}
-      data={users}
-      total={total}
-      page={parseInt(page as string) || 1}
-      pageSize={FetchLimit.USERS}
-      onPageChange={handlePageChange}
-      actions={<UsersActions roles={roles} users={users} />}
-      rowActions={(row) => <ActionsMenu row={row} roles={roles} />}
-      actionsColumnWidth={40}
-    />
+    <div className="space-y-4">
+      <DataTable
+        columns={columns}
+        data={data?.users || []}
+        total={data?.total || 0}
+        page={page}
+        pageSize={10}
+        onPageChange={setPage}
+        searchKey="name"
+        searchPlaceholder="Search by name or email..."
+        enableFiltering={true}
+        onSearch={handleSearch}
+        searchValue={search}
+        actions={<UsersActions roles={[]} users={data?.users || []} />}
+        rowActions={(row) => <ActionsMenu row={row} roles={[]} />}
+        actionsColumnWidth={40}
+      />
+      {isLoading && (
+        <div className="flex items-center justify-center p-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+        </div>
+      )}
+    </div>
   );
-};
+}
 
 export default UsersTable;

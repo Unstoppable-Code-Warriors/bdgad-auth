@@ -43,7 +43,6 @@ interface DataTableProps<TData, TValue> {
 	data: TData[]
 	searchKey?: string
 	searchPlaceholder?: string
-	enableSorting?: boolean
 	enableFiltering?: boolean
 	enableColumnVisibility?: boolean
 	enablePagination?: boolean
@@ -57,6 +56,8 @@ interface DataTableProps<TData, TValue> {
 	page?: number
 	onPageChange?: (page: number) => void
 	actionsColumnWidth?: number
+	onSearch?: (value: string) => void
+	searchValue?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -64,7 +65,6 @@ export function DataTable<TData, TValue>({
 	data,
 	searchKey,
 	searchPlaceholder = "Search...",
-	enableSorting = true,
 	enableFiltering = true,
 	enableColumnVisibility = true,
 	enablePagination = true,
@@ -78,6 +78,8 @@ export function DataTable<TData, TValue>({
 	page,
 	onPageChange,
 	actionsColumnWidth,
+	onSearch,
+	searchValue,
 }: DataTableProps<TData, TValue>) {
 	// Determine if pagination is externally controlled
 	const isExternalPagination =
@@ -110,11 +112,8 @@ export function DataTable<TData, TValue>({
 		)
 	}
 
-	const [sorting, setSorting] = useState<SortingState>([])
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
-		{}
-	)
+	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 	const [rowSelection, setRowSelection] = useState({})
 
 	// Add row actions column if provided
@@ -150,14 +149,12 @@ export function DataTable<TData, TValue>({
 	const table = useReactTable({
 		data: data || [],
 		columns: enhancedColumns,
-		onSortingChange: enableSorting ? setSorting : undefined,
 		onColumnFiltersChange: enableFiltering ? setColumnFilters : undefined,
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel:
 			enablePagination && !isExternalPagination
 				? getPaginationRowModel()
 				: undefined,
-		getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
 		getFilteredRowModel: enableFiltering
 			? getFilteredRowModel()
 			: undefined,
@@ -166,7 +163,6 @@ export function DataTable<TData, TValue>({
 			: undefined,
 		onRowSelectionChange: enableRowSelection ? setRowSelection : undefined,
 		state: {
-			sorting: enableSorting ? sorting : undefined,
 			columnFilters: enableFiltering ? columnFilters : undefined,
 			columnVisibility: enableColumnVisibility
 				? columnVisibility
@@ -250,22 +246,20 @@ export function DataTable<TData, TValue>({
 			<div className="flex items-center justify-between py-4">
 				<div className="flex items-center space-x-2">
 					{/* Search Input */}
-					{enableFiltering && searchKey && (
+					{searchKey && (
 						<div className="relative">
 							<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
 							<Input
 								placeholder={searchPlaceholder}
-								value={
-									(table
-										.getColumn(searchKey)
-										?.getFilterValue() as string) ?? ""
-								}
+								value={searchValue ?? (table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
 								onChange={(event) => {
-									const column = table.getColumn(searchKey)
-									if (column) {
-										column.setFilterValue(
-											event.target.value
-										)
+									if (onSearch) {
+										onSearch(event.target.value);
+									} else {
+										const column = table.getColumn(searchKey);
+										if (column) {
+											column.setFilterValue(event.target.value);
+										}
 									}
 								}}
 								className="pl-8 max-w-sm"
@@ -327,35 +321,12 @@ export function DataTable<TData, TValue>({
 									return (
 										<TableHead key={header.id}>
 											{header.isPlaceholder ? null : (
-												<div
-													className={cn(
-														"flex items-center space-x-2",
-														header.column.getCanSort() &&
-															"cursor-pointer select-none"
-													)}
-													onClick={
-														// Only add click handler if header doesn't have custom sorting
-														typeof header.column
-															.columnDef
-															.header === "string"
-															? header.column.getToggleSortingHandler()
-															: undefined
-													}
-												>
+												<div className="flex items-center space-x-2">
 													{flexRender(
 														header.column.columnDef
 															.header,
 														header.getContext()
 													)}
-													{/* Only show sort icon for string headers, custom headers handle their own sorting */}
-													{enableSorting &&
-														header.column.getCanSort() &&
-														typeof header.column
-															.columnDef
-															.header ===
-															"string" && (
-															<ArrowUpDown className="ml-2 h-4 w-4" />
-														)}
 												</div>
 											)}
 										</TableHead>
@@ -403,14 +374,6 @@ export function DataTable<TData, TValue>({
 			{/* Pagination */}
 			{enablePagination && displayTotalPages > 0 && (
 				<div className="flex items-center justify-end space-x-2 py-4">
-					{/* <div className="flex-1 text-sm text-muted-foreground">
-						{selectionInfo && (
-							<>
-								{selectionInfo.selectedCount} of{" "}
-								{selectionInfo.totalCount} row(s) selected.
-							</>
-						)}
-					</div> */}
 					<div className="flex items-center space-x-2">
 						<Pagination
 							total={displayTotalPages}
@@ -422,38 +385,6 @@ export function DataTable<TData, TValue>({
 			)}
 		</div>
 	)
-}
-
-// Helper function to create sortable column header
-export function createSortableHeader(title: string) {
-	return ({ column }: { column: any }) => {
-		if (!column) {
-			return <span>{title}</span>
-		}
-
-		const sortDirection = column.getIsSorted()
-
-		return (
-			<Button
-				variant="ghost"
-				onClick={() => {
-					if (column.toggleSorting) {
-						column.toggleSorting(sortDirection === "asc")
-					}
-				}}
-				className="h-auto p-0 font-semibold hover:bg-transparent"
-			>
-				{title}
-				{sortDirection === "asc" ? (
-					<ArrowUpDown className="ml-2 h-4 w-4 rotate-180" />
-				) : sortDirection === "desc" ? (
-					<ArrowUpDown className="ml-2 h-4 w-4" />
-				) : (
-					<ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />
-				)}
-			</Button>
-		)
-	}
 }
 
 // Helper function to create simple column header

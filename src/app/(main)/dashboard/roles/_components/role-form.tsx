@@ -37,8 +37,27 @@ const RoleForm = ({
 		validate: {
 			name: (value) =>
 				value.trim().length > 0 ? null : "Name is required",
-			description: (value) =>
-				value.trim().length > 0 ? null : "Description is required",
+			description: (value) => {
+				const trimmedValue = value.trim();
+				if (trimmedValue.length === 0) return "Description is required";
+				
+				// Check for multiple spaces
+				if (/\s{2,}/.test(trimmedValue)) {
+					return "Description cannot contain multiple spaces between words";
+				}
+				
+				// Check for allowed characters: letters (including Vietnamese), numbers, spaces, and special characters
+				const validPattern = /^[a-zA-ZÀ-ỹ0-9\s\W]+$/u;
+				if (!validPattern.test(trimmedValue)) {
+					return "Description can only contain letters (including Vietnamese), numbers, single spaces, and special characters";
+				}
+				
+				if (trimmedValue.length > 200) {
+					return "Description must be 200 characters or less";
+				}
+				
+				return null;
+			},
 		},
 	})
 
@@ -85,11 +104,6 @@ const RoleForm = ({
 	return (
 		<form onSubmit={form.onSubmit(handleSubmit)}>
 			<div className="grid gap-4 py-4">
-				{Object.keys(form.errors).length > 0 && (
-					<div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-						{Object.values(form.errors)[0]}
-					</div>
-				)}
 				<div className="grid gap-2">
 					<Label htmlFor="name">Name</Label>
 					<Input
@@ -109,6 +123,9 @@ const RoleForm = ({
 						key={form.key("description")}
 						className="resize-none"
 					/>
+					{form.errors.description && (
+						<div className="text-sm text-red-600">{form.errors.description}</div>
+					)}
 				</div>
 				<Button type="submit" disabled={loading}>
 					{loading

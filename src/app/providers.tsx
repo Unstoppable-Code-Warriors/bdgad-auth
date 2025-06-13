@@ -13,7 +13,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 			<QueryClientProvider client={queryClient}>
 				<DialogProvider>
 					{children}
-					<Toaster />
+					<Toaster position="top-center" />
 				</DialogProvider>
 			</QueryClientProvider>
 		</SessionProvider>

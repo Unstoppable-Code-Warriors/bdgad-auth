@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { createUser, updateUser, GetUsersResult } from "@/lib/actions/users";
 import { useForm } from "@mantine/form";
 import { useDialog } from "@/hooks/use-dialog";
@@ -195,10 +196,12 @@ export function UserForm({ action, row, roles }: UserFormProps) {
 
         <div className="grid gap-2">
           <Label htmlFor="address">Address</Label>
-          <Input
+          <Textarea
             id="address"
             {...form.getInputProps("address")}
+            placeholder="Enter address"
             maxLength={200}
+            className="resize-none"
           />
           {form.errors.address && (
             <div className="text-sm text-red-600">{form.errors.address}</div>

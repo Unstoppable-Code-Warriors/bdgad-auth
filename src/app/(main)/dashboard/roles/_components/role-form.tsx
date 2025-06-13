@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { createRole, updateRole, GetRolesResult } from "@/lib/actions/roles"
 import { useForm } from "@mantine/form"
 import { useDialog } from "@/hooks/use-dialog"
@@ -101,11 +102,12 @@ const RoleForm = ({
 				</div>
 				<div className="grid gap-2">
 					<Label htmlFor="description">Description</Label>
-					<Input
+					<Textarea
 						id="description"
 						placeholder="Enter role description"
 						{...form.getInputProps("description")}
 						key={form.key("description")}
+						className="resize-none"
 					/>
 				</div>
 				<Button type="submit" disabled={loading}>

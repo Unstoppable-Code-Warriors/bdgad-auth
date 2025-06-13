@@ -8,7 +8,6 @@ import { useForm } from "@mantine/form";
 import { useDialog } from "@/hooks/use-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { GetRolesResult } from "@/lib/actions/roles";
 import { Row } from "@tanstack/react-table";
 import {
@@ -18,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 
 interface UserFormProps {
   action: "create" | "update";
@@ -32,11 +32,11 @@ interface UserMetadata {
 
 export function UserForm({ action, row, roles }: UserFormProps) {
   const [loading, setLoading] = useState(false);
-  const queryClient = useQueryClient();
   const dialog = useDialog();
   const isUpdateMode = action === "update";
   const userData = row?.original;
-  console.log("roles from data", roles);
+  const router = useRouter();
+
   const form = useForm({
     initialValues: {
       name: userData?.name || "",
@@ -114,7 +114,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
         );
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      router.refresh();
       dialog.closeAll();
     } catch (error) {
       console.error(error);
@@ -137,6 +137,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
             id="name"
             {...form.getInputProps("name")}
             maxLength={50}
+            disabled={isUpdateMode}
           />
           {form.errors.name && (
             <div className="text-sm text-red-600">{form.errors.name}</div>

@@ -133,7 +133,7 @@ const RoleForm = ({
 							? "Updating..."
 							: "Creating..."
 						: isUpdateMode
-						? "Update Role"
+						? "Submit"
 						: "Create Role"}
 				</Button>
 			</div>

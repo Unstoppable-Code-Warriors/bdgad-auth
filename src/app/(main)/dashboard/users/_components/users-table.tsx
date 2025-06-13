@@ -331,6 +331,7 @@ export function UsersTable() {
         searchValue={search}
         actions={<UsersActions roles={rolesData?.roles || []} users={allUsers} />}
         rowActions={(row) => <ActionsMenu row={row} roles={rolesData?.roles || []} />}
+        requiredColumns={["name", "email", "roles"]}
         actionsColumnWidth={40}
       />
       {isLoading && (

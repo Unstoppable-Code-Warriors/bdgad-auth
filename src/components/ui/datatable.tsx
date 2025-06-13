@@ -59,6 +59,7 @@ interface DataTableProps<TData, TValue> {
 	actionsColumnWidth?: number
 	onSearch?: (value: string) => void
 	searchValue?: string
+	requiredColumns?: string[]
 }
 
 export function DataTable<TData, TValue>({
@@ -82,6 +83,7 @@ export function DataTable<TData, TValue>({
 	actionsColumnWidth,
 	onSearch,
 	searchValue,
+	requiredColumns = [],
 }: DataTableProps<TData, TValue>) {
 	// Determine if pagination is externally controlled
 	const isExternalPagination =
@@ -117,6 +119,7 @@ export function DataTable<TData, TValue>({
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 	const [rowSelection, setRowSelection] = useState({})
+	const [sorting, setSorting] = useState<SortingState>([])
 
 	// Add row actions column if provided
 	const enhancedColumns = useMemo(() => {
@@ -164,12 +167,15 @@ export function DataTable<TData, TValue>({
 			? setColumnVisibility
 			: undefined,
 		onRowSelectionChange: enableRowSelection ? setRowSelection : undefined,
+		onSortingChange: setSorting,
+		getSortedRowModel: getSortedRowModel(),
 		state: {
 			columnFilters: enableFiltering ? columnFilters : undefined,
 			columnVisibility: enableColumnVisibility
 				? columnVisibility
 				: undefined,
 			rowSelection: enableRowSelection ? rowSelection : undefined,
+			sorting,
 			pagination:
 				enablePagination && !isExternalPagination
 					? {
@@ -180,15 +186,19 @@ export function DataTable<TData, TValue>({
 		},
 		manualPagination: isExternalPagination,
 		pageCount: isExternalPagination ? totalPages : -1,
-		initialState:
-			enablePagination && !isExternalPagination
-				? {
-						pagination: {
-							pageSize: Math.max(1, pageSize || 10),
-							pageIndex: 0,
-						},
-				  }
-				: undefined,
+		initialState: {
+			columnVisibility: Object.fromEntries(
+				columns.map((col) => {
+					const columnId = (col as any).id || (col as any).accessorKey;
+					return [
+						columnId,
+						requiredColumns.includes(columnId)
+							? true
+							: undefined,
+					];
+				})
+			),
+		},
 	})
 
 	// Safety check for table initialization
@@ -298,7 +308,10 @@ export function DataTable<TData, TValue>({
 							<DropdownMenuContent align="end">
 								{table
 									.getAllColumns()
-									.filter((column) => column.getCanHide())
+									.filter((column) => 
+										column.getCanHide() && 
+										!requiredColumns.includes(column.id)
+									)
 									.map((column) => {
 										return (
 											<DropdownMenuCheckboxItem
@@ -306,9 +319,7 @@ export function DataTable<TData, TValue>({
 												className="capitalize"
 												checked={column.getIsVisible()}
 												onCheckedChange={(value) =>
-													column.toggleVisibility(
-														!!value
-													)
+													column.toggleVisibility(!!value)
 												}
 											>
 												{column.id}

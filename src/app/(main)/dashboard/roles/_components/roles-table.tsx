@@ -5,13 +5,11 @@ import { createHeader, DataTable } from "@/components/ui/datatable"
 import { GetRolesResult } from "@/lib/actions/roles"
 import { FetchLimit } from "@/lib/constants"
 import { ColumnDef, Row } from "@tanstack/react-table"
-import { MoreHorizontal, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useDialog } from "@/hooks/use-dialog"
 import {
 	DropdownMenu,
-	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import RoleForm from "./role-form"
 import { Label } from "@/components/ui/label"
@@ -25,7 +23,7 @@ const columns: ColumnDef<GetRolesResult["roles"][0]>[] = [
 		accessorKey: "description",
 		header: createHeader("Description"),
 		cell: ({ row }) => (
-			<div className="max-w-[300px] truncate" title={row.original.description}>
+			<div className="max-w-[600px] truncate" title={row.original.description}>
 				{row.original.description}
 			</div>
 		),
@@ -106,6 +104,7 @@ const RolesTable = ({
 			data={roles}
 			total={total}
 			pageSize={FetchLimit.ROLES}
+			requiredColumns={["name"]}
 			// actions={<RolesActions />}
 			rowActions={(row) => <ActionsMenu row={row} />}
 		/>

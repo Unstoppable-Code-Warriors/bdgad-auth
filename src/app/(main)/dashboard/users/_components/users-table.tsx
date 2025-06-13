@@ -5,7 +5,7 @@ import { createHeader, DataTable } from "@/components/ui/datatable";
 import { GetUsersResult } from "@/lib/actions/users";
 import { FetchLimit } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Download, FileDown, Plus, Ban, Trash2, Eye, Pencil, Lock } from "lucide-react";
+import { Download, FileDown, Plus, Ban, Trash2, Eye, Pencil, Lock, FileUp } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -140,7 +140,7 @@ const UsersActions = ({
         Download Template
       </Button>
       <Button variant="outline" onClick={() => hanldeImportExcel(users, roles)}>
-        <Download className="h-4 w-4 mr-2" />
+        <FileUp className="h-4 w-4 mr-2" />
         Import excel
       </Button>
       <Button variant="outline" onClick={openAddUserModal}>

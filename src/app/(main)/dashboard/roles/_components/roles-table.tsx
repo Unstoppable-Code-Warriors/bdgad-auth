@@ -72,7 +72,9 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
 					</div>
 					<div className="grid gap-2">
 						<Label>Description</Label>
-						<div className="text-sm whitespace-pre-wrap">{row.original.description}</div>
+						<div className="text-sm max-h-[300px] overflow-y-auto">
+							{row.original.description}
+						</div>
 					</div>
 				</div>
 			),

@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface UserFormProps {
   action: "create" | "update";
@@ -36,7 +37,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
   const isUpdateMode = action === "update";
   const userData = row?.original;
   const router = useRouter();
-
+  const queryClient = useQueryClient();
   const form = useForm({
     initialValues: {
       name: userData?.name || "",
@@ -70,16 +71,39 @@ export function UserForm({ action, row, roles }: UserFormProps) {
       roleId: (value: string) => (value ? null : "Please select a role"),
       phone: (value: string) => {
         const trimmedValue = value.trim();
-        if (trimmedValue && !/^\+?[\d\s-]{10,}$/.test(trimmedValue)) {
-          return "Phone number must be at least 10 digits";
+        if (!trimmedValue) return null; // Phone is optional
+        
+        // Check if phone contains only digits
+        if (!/^\d+$/.test(trimmedValue)) {
+          return "Phone number must contain only digits (0-9)";
         }
+        
+        // Check if phone has exactly 10 digits
+        if (trimmedValue.length !== 10) {
+          return "Phone number must be exactly 10 digits";
+        }
+        
         return null;
       },
       address: (value: string) => {
         const trimmedValue = value.trim();
-        if (trimmedValue && trimmedValue.length > 200) {
+        if (!trimmedValue) return null; // Address is optional
+        
+        // Check for multiple spaces
+        if (/\s{2,}/.test(trimmedValue)) {
+          return "Address cannot contain multiple spaces between words";
+        }
+        
+        // Check for allowed characters: letters (including Vietnamese), numbers, spaces, commas, and slashes
+        const validPattern = /^[a-zA-ZÀ-ỹ0-9\s,/-]+$/u;
+        if (!validPattern.test(trimmedValue)) {
+          return "Address can only contain letters (including Vietnamese), numbers, single spaces, commas (,), and slashes (/)";
+        }
+        
+        if (trimmedValue.length > 200) {
           return "Address must be 200 characters or less";
         }
+        
         return null;
       },
     },
@@ -115,6 +139,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
       }
 
       router.refresh();
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
       dialog.closeAll();
     } catch (error) {
       console.error(error);

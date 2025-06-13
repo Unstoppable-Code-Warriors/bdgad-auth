@@ -9,6 +9,7 @@ import { FetchLimit } from "../constants";
 import {
   sendPasswordEmail,
   sendPasswordEmailsToUsers,
+  sendRoleChangeEmail,
 } from "@/lib/utils/email";
 
 // Define the type for user with roles
@@ -286,6 +287,19 @@ async function updateUserCore({
       updateData.password = await bcrypt.hash(password, 12);
     }
 
+    // Get current user data for role comparison
+    const currentUser = await tx
+      .select({
+        email: users.email,
+        name: users.name,
+        roles: roles.name,
+      })
+      .from(users)
+      .leftJoin(userRoles, eq(users.id, userRoles.userId))
+      .leftJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(users.id, id))
+      .limit(1);
+
     // Update user if there's data to update
     let updatedUser;
     if (Object.keys(updateData).length > 0) {
@@ -310,6 +324,13 @@ async function updateUserCore({
 
     // Update roles if provided
     if (roleIds !== undefined) {
+      // Get new role name for email notification
+      const newRole = await tx
+        .select({ name: roles.name })
+        .from(roles)
+        .where(eq(roles.id, roleIds[0]))
+        .limit(1);
+
       // Delete existing roles
       await tx.delete(userRoles).where(eq(userRoles.userId, id));
 
@@ -321,6 +342,20 @@ async function updateUserCore({
             roleId,
           }))
         );
+
+        // Send email notification if role changed
+        if (currentUser[0]?.roles !== newRole[0]?.name) {
+          try {
+            await sendRoleChangeEmail(
+              currentUser[0].email,
+              currentUser[0].name,
+              newRole[0].name
+            );
+          } catch (emailError) {
+            console.error("Failed to send role change notification:", emailError);
+            // Don't throw here - role update was successful, just email failed
+          }
+        }
       }
     }
 

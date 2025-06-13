@@ -119,6 +119,11 @@ export function UserForm({ action, row, roles }: UserFormProps) {
       };
 
       if (isUpdateMode && userData) {
+        // Check if role has changed
+        const currentRoleId = userData.roles?.[0]?.id?.toString();
+        const newRoleId = values.roleId;
+        const roleChanged = currentRoleId !== newRoleId;
+
         await updateUser({
           id: userData.id,
           name: values.name,
@@ -126,7 +131,12 @@ export function UserForm({ action, row, roles }: UserFormProps) {
           roleIds: values.roleId ? [parseInt(values.roleId)] : [],
           metadata,
         });
-        toast.success("User updated successfully");
+
+        if (roleChanged) {
+          toast.success("User updated successfully. Email notification has been sent.");
+        } else {
+          toast.success("User updated successfully");
+        }
       } else {
         await createUser({
           email: values.email,

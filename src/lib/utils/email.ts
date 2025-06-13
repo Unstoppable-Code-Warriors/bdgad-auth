@@ -126,3 +126,53 @@ Best regards`,
     throw new Error("Failed to send password emails");
   }
 };
+
+export const sendRoleChangeEmail = async (
+  email: string,
+  name: string,
+  newRoleName: string
+) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your Role Has Been Updated - BDGAD",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Role Update Notification</h2>
+          <p>Hello ${name},</p>
+          <p>Your role in the BDGAD system has been updated.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>New Role:</strong> ${newRoleName}</p>
+          </div>
+          
+          <p>If you have any questions about your new role or its permissions, please contact your system administrator.</p>
+          
+          <p>Best regards,<br>BDGAD Team</p>
+        </div>
+      `,
+      text: `Role Update Notification
+
+Hello ${name},
+
+Your role in the BDGAD system has been updated.
+
+New Role: ${newRoleName}
+
+If you have any questions about your new role or its permissions, please contact your system administrator.
+
+Best regards,
+BDGAD Team`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Role change notification sent successfully to ${email}`);
+    return true;
+  } catch (error) {
+    console.error("Error sending role change notification:", error);
+    throw new Error("Failed to send role change notification");
+  }
+};

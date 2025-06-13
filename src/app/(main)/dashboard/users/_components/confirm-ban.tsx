@@ -4,7 +4,7 @@ import { GetUsersResult } from "@/lib/actions/users";
 import { updateUser } from "@/lib/actions/users";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { sendBanNotification } from "@/lib/actions/email";
+import { sendBanNotification, sendUnbanNotification } from "@/lib/actions/email";
 import { useForm } from "@mantine/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
   const user = row.original;
   const isActive = user.status === "active";
   const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm({
     initialValues: {
       reason: "",
@@ -58,7 +59,7 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
         status: isActive ? "inactive" : "active",
       });
 
-      // Send ban notification email only when banning (not when unbanning)
+      // Send notification email
       if (isActive) {
         const result = await sendBanNotification(user.email, user.name, values.reason.trim());
         if (result.success) {
@@ -67,14 +68,19 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
           toast.success(`User has been banned, but failed to send notification email.`);
         }
       } else {
-        toast.success(`User has been unbanned successfully`);
+        const result = await sendUnbanNotification(user.email, user.name, values.reason.trim());
+        if (result.success) {
+          toast.success(`User has been unbanned and notification email has been sent.`);
+        } else {
+          toast.success(`User has been unbanned, but failed to send notification email.`);
+        }
       }
 
-      setIsLoading(false);
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       onClose();
     } catch (error) {
       toast.error(`Failed to ${isActive ? "ban" : "unban"} user`);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -85,27 +91,25 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
         Are you sure you want to {isActive ? "ban" : "unban"} {user.name}? 
         {isActive 
           ? " This will prevent them from accessing the system and they will be notified via email."
-          : " This will restore their access to the system."}
+          : " This will restore their access to the system and they will be notified via email."}
       </p>
 
-      {isActive && (
-        <div className="grid gap-2">
-          <Label htmlFor="reason">Ban Reason<span className="text-red-500">*</span></Label>
-          <Textarea
-            id="reason"
-            {...form.getInputProps("reason")}
-            placeholder="Enter reason for banning this user"
-            className="resize-none"
-            disabled={isLoading}
-          />
-          {form.errors.reason && (
-            <div className="text-sm text-red-600">{form.errors.reason}</div>
-          )}
-        </div>
-      )}
+      <div className="grid gap-2">
+        <Label htmlFor="reason">Reason<span className="text-red-500">*</span></Label>
+        <Textarea
+          id="reason"
+          {...form.getInputProps("reason")}
+          placeholder={`Enter reason for ${isActive ? "banning" : "unbanning"} this user`}
+          className="resize-none"
+          disabled={isLoading}
+        />
+        {form.errors.reason && (
+          <div className="text-sm text-red-600">{form.errors.reason}</div>
+        )}
+      </div>
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
+        <Button variant="outline" onClick={onClose} disabled={isLoading}>
           Cancel
         </Button>
         <Button variant="destructive" type="submit" disabled={isLoading}>

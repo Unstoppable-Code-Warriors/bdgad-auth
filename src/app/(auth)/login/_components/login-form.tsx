@@ -1,87 +1,137 @@
 "use client"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card"
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { authenticate } from "@/lib/actions/auth"
-import { useFormStatus } from "react-dom"
-import { useActionState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { Loader2 } from "lucide-react"
 
-function SubmitButton() {
-	const { pending } = useFormStatus()
+const formSchema = z.object({
+	email: z.string().email("Please enter a valid email address"),
+	password: z.string().min(1, "Password is required"),
+})
+
+type FormValues = z.infer<typeof formSchema>
+
+export function LoginForm() {
+	const router = useRouter()
+	const [isLoading, setIsLoading] = useState(false)
+
+	const form = useForm<FormValues>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			email: "",
+			password: "",
+		},
+	})
+
+	async function onSubmit(values: FormValues) {
+		setIsLoading(true)
+		try {
+			const result = await signIn("credentials", {
+				email: values.email,
+				password: values.password,
+				redirect: false,
+			})
+
+			if (result?.error) {
+				form.setError("root", {
+					message: "Invalid email or password",
+				})
+				return
+			}
+
+			router.push("/dashboard")
+			router.refresh()
+		} catch (error) {
+			form.setError("root", {
+				message: "An error occurred. Please try again.",
+			})
+		} finally {
+			setIsLoading(false)
+		}
+	}
 
 	return (
-		<Button type="submit" className="w-full" disabled={pending}>
-			{pending ? "Signing in..." : "Login"}
-		</Button>
-	)
-}
+		<div className="space-y-6">
+			<div className="space-y-2 text-center">
+				<h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+				<p className="text-sm text-muted-foreground">
+					Enter your credentials to access your account
+				</p>
+			</div>
 
-export function LoginForm({
-	className,
-	...props
-}: React.ComponentProps<"div">) {
-	const [errorMessage, dispatch] = useActionState(authenticate, undefined)
-
-	return (
-		<div className={cn("flex flex-col gap-6", className)} {...props}>
-			<Card>
-				<CardHeader>
-					<CardTitle>Login to your account</CardTitle>
-					<CardDescription>
-						Enter your email below to login to your account
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form action={dispatch}>
-						<div className="flex flex-col gap-6">
-							{errorMessage && (
-								<div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-									{errorMessage}
-								</div>
-							)}
-							<div className="grid gap-3">
-								<Label htmlFor="email">Email</Label>
-								<Input
-									id="email"
-									name="email"
-									type="email"
-									placeholder="m@example.com"
-									required
-								/>
-							</div>
-							<div className="grid gap-3">
-								<div className="flex items-center">
-									<Label htmlFor="password">Password</Label>
-									{/* <a
-										href="#"
-										className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-									>
-										Forgot your password?
-									</a> */}
-								</div>
-								<Input
-									id="password"
-									name="password"
-									type="password"
-									required
-								/>
-							</div>
-							<div className="flex flex-col gap-3">
-								<SubmitButton />
-							</div>
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+					<FormField
+						control={form.control}
+						name="email"
+						render={({ field }: { field: any }) => (
+							<FormItem>
+								<FormLabel>Email</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="name@example.com"
+										type="email"
+										disabled={isLoading}
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+					<FormField
+						control={form.control}
+						name="password"
+						render={({ field }: { field: any }) => (
+							<FormItem>
+								<FormLabel>Password</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="Enter your password"
+										type="password"
+										disabled={isLoading}
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+					{form.formState.errors.root && (
+						<div className="text-sm text-red-500">
+							{form.formState.errors.root.message}
 						</div>
-					</form>
-				</CardContent>
-			</Card>
+					)}
+					<Button
+						type="submit"
+						className="w-full"
+						disabled={isLoading}
+					>
+						{isLoading ? (
+							<>
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								Signing in...
+							</>
+						) : (
+							"Sign in"
+						)}
+					</Button>
+				</form>
+			</Form>
 		</div>
 	)
 }

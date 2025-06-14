@@ -24,6 +24,7 @@ import { getUsers } from "@/lib/actions/users";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { format } from "date-fns";
+import { ImportDataTable } from "./import-data-table";
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
@@ -100,6 +101,7 @@ const UsersActions = ({
   users: GetUsersResult["users"];
 }) => {
   const dialog = useDialog();
+  const router = useRouter();
 
   const openAddUserModal = () => {
     dialog.open({
@@ -109,12 +111,12 @@ const UsersActions = ({
     });
   };
 
-  const downloadTemplateModal = () => {
-    const link = document.createElement("a");
-    link.href = "/templates/account_creation_template.xlsx";
-    link.download = "account_creation_template.xlsx";
-    link.click();
-  };
+  // const downloadTemplateModal = () => {
+  //   const link = document.createElement("a");
+  //   link.href = "/templates/account_creation_template.xlsx";
+  //   link.download = "account_creation_template.xlsx";
+  //   link.click();
+  // };
 
   const hanldeImportExcel = (
     users: GetUsersResult["users"],
@@ -133,13 +135,21 @@ const UsersActions = ({
     });
   };
 
+  const handleImportUsers = () => {
+   router.push("/dashboard/users/import")
+  };
+
   return (
     <div className="flex items-center gap-4">
-      <Button variant="outline" onClick={downloadTemplateModal}>
+      {/* <Button variant="outline" onClick={downloadTemplateModal}>
         <FileDown className="h-4 w-4 mr-2" />
         Download Template
-      </Button>
-      <Button variant="outline" onClick={() => hanldeImportExcel(users, roles)}>
+      </Button> */}
+      {/* <Button variant="outline" onClick={() => hanldeImportExcel(users, roles)}>
+        <FileUp className="h-4 w-4 mr-2" />
+        Import excel
+      </Button> */}
+       <Button variant="outline" onClick={handleImportUsers}>
         <FileUp className="h-4 w-4 mr-2" />
         Import excel
       </Button>

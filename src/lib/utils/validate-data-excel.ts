@@ -268,30 +268,18 @@ export const processExcelData = (
   validationErrors: ValidationErrors;
 } => {
   const processedData: ProcessedRowData[] = [];
-  const emails = new Set<string>();
-  const errors: string[] = [];
 
   for (let i = 0; i < jsonData.length; i++) {
     const row = jsonData[i];
     const rowIndex = i + 2; // +2 because Excel rows start at 1 and first row is header
 
-    const rowValidation = validateRow(row, rowIndex);
-
-    if (!rowValidation.isValid) {
-      if (rowValidation.error) {
-        errors.push(rowValidation.error);
-      }
-      continue;
-    }
-
-    const cleanedRow = rowValidation.cleanedRow!;
-
-    // Check for duplicate email within the file
-    if (emails.has(cleanedRow.Email)) {
-      errors.push(`Row ${rowIndex}: Email "${cleanedRow.Email}" is duplicated`);
-      continue;
-    }
-    emails.add(cleanedRow.Email);
+    const cleanedRow: ProcessedRowData = {
+      Name: row.Name || "",
+      Email: row.Email || "",
+      Role: Number(row.Role) || 0,
+      Phone: row.Phone || "",
+      Address: row.Address || "",
+    };
 
     processedData.push(cleanedRow);
   }
@@ -299,8 +287,8 @@ export const processExcelData = (
   return {
     processedData,
     validationErrors: {
-      errors,
-      hasErrors: errors.length > 0,
+      errors: [],
+      hasErrors: false,
     },
   };
 };

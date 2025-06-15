@@ -112,7 +112,7 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
         <Button variant="outline" onClick={onClose} disabled={isLoading}>
           Cancel
         </Button>
-        <Button variant="destructive" type="submit" disabled={isLoading}>
+        <Button variant={isActive ? "destructive" : "default"} type="submit" disabled={isLoading}>
           {isActive ? "Ban User" : "Unban User"}
           {isLoading && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>

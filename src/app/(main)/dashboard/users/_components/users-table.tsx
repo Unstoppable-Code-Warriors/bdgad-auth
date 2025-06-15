@@ -60,7 +60,7 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     accessorKey: "roles",
     header: "Role",
     cell: ({ row }) => (
-      <div className="flex gap-1 max-w-[80px]">
+      <div className="flex gap-1 max-w-[70px]">
         {row.original.roles.map((role) => (
           <Badge key={role.id}>{role.name}</Badge>
         ))}
@@ -207,7 +207,7 @@ const ActionsMenu = ({
 
   const openBanUserDialog = () => {
     dialog.open({
-      title: "Ban User",
+      title: row.original.status === "active" ? "Ban User" : "Unban User",
       children: <ConfirmBan onClose={() => dialog.closeAll()} row={row} />,
       onClose: () => dialog.closeAll(),
     });
@@ -221,13 +221,13 @@ const ActionsMenu = ({
        View Detail
        </div>
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={openEditUserModal}>
+      <DropdownMenuItem disabled={row.original.status === "inactive"} onClick={openEditUserModal}>
         <div className="flex items-center gap-1">
           <Pencil className="mr-2 h-4 w-4" />
           Edit
         </div>
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={openConfirmResetPasswordDialog}>
+      <DropdownMenuItem disabled={row.original.status === "inactive"} onClick={openConfirmResetPasswordDialog}>
         <div className="flex items-center gap-1">
           <Lock className="mr-2 h-4 w-4" />
           Reset Password

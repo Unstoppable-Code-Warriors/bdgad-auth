@@ -86,6 +86,18 @@ export const validateColumns = (
     }
   }
 
+  // Check for duplicate columns
+  const duplicateColumns = actualColumns.filter(
+    (col, index) => actualColumns.indexOf(col) !== index
+  );
+  if (duplicateColumns.length > 0) {
+    return {
+      isValid: false,
+      error: `Duplicate column(s) found: ${duplicateColumns.join(", ")}. The system will take the value of the first occurrence of the column.`,
+    };
+  }
+
+  
   // Check if required columns are in correct order (A to E)
   const firstFiveColumns = actualColumns.slice(0, 5);
   const hasAllRequiredColumns = EXPECTED_COLUMNS.every(col => 
@@ -286,6 +298,14 @@ export const processExcelData = (
     const row = jsonData[i];
     const rowIndex = i + 2; // +2 because Excel rows start at 1 and first row is header
 
+    // Skip rows where all fields are empty or Role is 0
+    const isAllFieldsEmpty = !row.Name && !row.Email && !row.Phone && !row.Address && !row.Role;
+    const isRoleZero = Number(row.Role) === 0;
+    
+    if (isAllFieldsEmpty || isRoleZero) {
+      continue;
+    }
+
     // Ensure all expected columns exist in the row, even if they're empty
     const cleanedRow: ProcessedRowData = {
       Name: row.Name || "",
@@ -352,6 +372,9 @@ export const validateDuplicatePhone = (
   const duplicatedPhones = new Set<string>();
 
   processedData.forEach((item) => {
+    // Skip empty phone numbers
+    if (!item.Phone || item.Phone.trim() === "") return;
+    
     const count = phoneCount.get(item.Phone) || 0;
     phoneCount.set(item.Phone, count + 1);
     if (count > 0) {

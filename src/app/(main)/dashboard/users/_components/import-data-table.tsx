@@ -95,6 +95,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       // Process and validate data
       const { processedData } = processExcelData(jsonData);
 
+      console.log("processedData", processedData);
       // Validate account limit
       const accountLimitValidation = validateAccountLimit(processedData);
       if (!accountLimitValidation.isValid) {

@@ -1,3 +1,4 @@
+import { errorResponses } from './../utils/errorResponses';
 import { Context, Next } from "hono"
 import { verify } from "hono/jwt"
 import { JWTPayload } from "../types"
@@ -33,7 +34,7 @@ export const jwtAuth = async (c: Context, next: Next) => {
 				.limit(1)
 
 			if (!user || user.status !== "active") {
-				return c.json({ status: 401,message: "Account is not active", code: "ACCOUNT_INACTIVE" })
+				return c.json(errorResponses.accountInactive)
 			}
 
 			// Add user info to context

@@ -17,6 +17,7 @@ import {
 	sendPasswordResetEmail,
 	sendPasswordResetConfirmationEmail,
 } from "../utils/emailService"
+import { errorResponses } from "../utils/errorResponses"
 import crypto from "crypto"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key"
@@ -42,7 +43,7 @@ export const login = async (c: ValidatedContext) => {
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json({ error: "Account is not active" }, 401)
+			return c.json(errorResponses.accountInactive)
 		}
 
 		// Verify password
@@ -134,7 +135,7 @@ export const getUserInfo = async (c: ValidatedContext) => {
 
 		// Check if user is still active
 		if (foundUser.status !== "active") {
-			return c.json({ error: "Account is not active" }, 401)
+			return c.json(errorResponses.accountInactive)
 		}
 
 		// Get user roles
@@ -312,22 +313,19 @@ export const forgotPassword = async (c: ValidatedContext) => {
 
 		// Check if user exists
 		if (user.length === 0) {
-			return c.json({
-				status: 500,
-				message: "Email not found in the system",
-				code: "EMAIL_NOT_FOUND",
-			})
+			return c.json(errorResponses.emailNotFound)
 		}
 
 		const foundUser = user[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json({ 
-				message: "Account is not active",
+			return c.json({
+				status: 401,
 				code: "ACCOUNT_INACTIVE",
+				message: "Account is not active",
 				details: "The account associated with this email is not active."
-			}, 500)
+			})
 		}
 
 		// Generate secure random token
@@ -355,19 +353,19 @@ export const forgotPassword = async (c: ValidatedContext) => {
 				"Failed to send password reset email:",
 				emailError
 			)
-			return c.json({ 
+			return c.json({
 				error: "Failed to send password reset email",
 				details: "There was an error sending the password reset email. Please try again later."
 			}, 500)
 		}
 
 		return c.json({
-			
+
 			message: "Password reset link has been sent to your email.",
 		})
 	} catch (error) {
 		console.error("Forgot password error:", error)
-		return c.json({ 
+		return c.json({
 			error: "Internal server error",
 			details: "An unexpected error occurred while processing your request."
 		}, 500)

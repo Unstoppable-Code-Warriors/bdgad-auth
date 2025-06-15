@@ -98,7 +98,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
         // Check for allowed characters: letters (including Vietnamese), numbers, spaces, commas, and slashes
         const validPattern = /^[a-zA-ZÀ-ỹ0-9\s,./-]+$/u;
         if (!validPattern.test(trimmedValue)) {
-          return "Address can only contain letters (including Vietnamese), numbers, single spaces, commas (,), and slashes (/)";
+          return "Address can only contain letters (including Vietnamese), numbers, single spaces, commas (,), hyphens (-), and slashes (/)";
         }
         
         if (trimmedValue.length > 200) {

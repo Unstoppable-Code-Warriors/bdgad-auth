@@ -16,7 +16,7 @@ export function UsersActions({ roles, users }: UsersActionsProps) {
   const openAddUserModal = () => {
     dialog.open({
       title: "Add New User",
-      children: <UserForm action="create" roles={roles} />,
+      children: <UserForm action="create" roles={roles} users={users} />,
       size: "md",
     });
   };

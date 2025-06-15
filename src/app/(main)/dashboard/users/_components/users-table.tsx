@@ -111,7 +111,7 @@ const UsersActions = ({
   const openAddUserModal = () => {
     dialog.open({
       title: "Add New User",
-      children: <UserForm action="create" roles={roles} />,
+      children: <UserForm users={users} action="create" roles={roles} />,
       size: "md",
     });
   };
@@ -169,16 +169,18 @@ const UsersActions = ({
 const ActionsMenu = ({
   row,
   roles,
+  users,
 }: {
   row: Row<GetUsersResult["users"][0]>;
   roles: GetRolesResult["roles"];
+  users: GetUsersResult["users"];
 }) => {
   const dialog = useDialog();
 
   const openEditUserModal = () => {
     dialog.open({
       title: "Edit User",
-      children: <UserForm action="update" row={row} roles={roles} />,
+      children: <UserForm action="update" row={row} roles={roles} users={users} />,
     });
   };
 
@@ -345,7 +347,7 @@ export function UsersTable() {
         onSearch={handleSearch}
         searchValue={search}
         actions={<UsersActions roles={rolesData?.roles || []} users={allUsers} />}
-        rowActions={(row) => <ActionsMenu row={row} roles={rolesData?.roles || []} />}
+        rowActions={(row) => <ActionsMenu row={row} roles={rolesData?.roles || []} users={allUsers} />}
         requiredColumns={["name", "email", "roles"]}
         actionsColumnWidth={40}
       />

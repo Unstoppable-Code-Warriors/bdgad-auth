@@ -83,14 +83,12 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
 
 	return (
 		<DropdownMenu>
-		
 				<DropdownMenuItem onClick={openViewDetailModal}>
 					View Detail
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={openEditRoleModal}>
-					Edit
+					Edit Description
 				</DropdownMenuItem>
-			
 		</DropdownMenu>
 	)
 }

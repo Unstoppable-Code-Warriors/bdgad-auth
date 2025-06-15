@@ -25,6 +25,7 @@ interface UserFormProps {
   action: "create" | "update";
   row?: Row<GetUsersResult["users"][0]>;
   roles: GetRolesResult["roles"];
+  users: GetUsersResult["users"];
 }
 
 interface UserMetadata {
@@ -32,7 +33,7 @@ interface UserMetadata {
   address?: string;
 }
 
-export function UserForm({ action, row, roles }: UserFormProps) {
+export function UserForm({ action, row, roles, users }: UserFormProps) {
   const [loading, setLoading] = useState(false);
   const dialog = useDialog();
   const isUpdateMode = action === "update";
@@ -67,6 +68,13 @@ export function UserForm({ action, row, roles }: UserFormProps) {
         const trimmedValue = value.trim();
         if (trimmedValue.length === 0) return "Email is required";
         if (!/^\S+@\S+$/.test(trimmedValue)) return "Invalid email format";
+        
+        // Check if email already exists in the system (skip check in update mode)
+        if (!isUpdateMode) {
+          const emailExists = users.some(user => user.email === trimmedValue);
+          if (emailExists) return "Email already exists in the system";
+        }
+        
         return null;
       },
       roleId: (value: string) => (value ? null : "Please select a role"),
@@ -83,6 +91,16 @@ export function UserForm({ action, row, roles }: UserFormProps) {
         if (trimmedValue.length !== 10) {
           return "Phone number must be exactly 10 digits";
         }
+
+        // Check if phone already exists in the system
+        const phoneExists = users.some(user => {
+          // Skip checking against the current user's phone number in update mode
+          if (isUpdateMode && user.id === userData?.id) return false;
+          
+          const metadata = user.metadata as UserMetadata;
+          return metadata?.phone === trimmedValue;
+        });
+        if (phoneExists) return "Phone number already exists in the system";
         
         return null;
       },

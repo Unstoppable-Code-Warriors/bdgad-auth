@@ -30,8 +30,10 @@ import {
   validateAccountLimit,
   validateEmailNotExistInSystem,
   validateDuplicateEmail,
-  validatePhoneNotExistInSystem,
   validateDuplicatePhone,
+  validatePhoneNotExistInSystem,
+  validateRole,
+  validateRoleExcel,
 } from "@/lib/utils/validate-data-excel";
 
 interface ImportedUser {
@@ -92,9 +94,20 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         setValidationError(prev => [...prev, columnValidation.error!]);
       }
 
+      // Validate role
+      const roleValidation = validateRoleExcel(jsonData);
+      if (!roleValidation.isValid) {
+        setValidationError(prev => [...prev, roleValidation.error!]);
+      }
+
+
+      console.log("jsonData",jsonData);
+      
       // Process and validate data
       const { processedData } = processExcelData(jsonData);
 
+
+      console.log("processedData",processedData);
       // Validate account limit
       const accountLimitValidation = validateAccountLimit(processedData);
       if (!accountLimitValidation.isValid) {
@@ -142,6 +155,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
           roleId: parseInt(row.Role) || 0,
           errors: validateRow(row, index + 1),
         }));
+
+        console.log("convertedUsers",convertedUsers);
 
         setImportedUsers(convertedUsers);
   
@@ -233,6 +248,13 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Role validation
     if (!row.Role) {
       errors.roleId = "Role is required";
+    } else {
+      const roleNum = Number(row.Role);
+      if (isNaN(roleNum) || !Number.isInteger(roleNum)) {
+        errors.roleId = "Role is required";
+      } else if (roleNum < 1 || roleNum > 5) {
+        errors.roleId = "Role is required";
+      }
     }
 
     return Object.keys(errors).length > 0 ? errors : undefined;

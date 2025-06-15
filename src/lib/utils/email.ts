@@ -223,3 +223,55 @@ BDGAD Team`,
     throw new Error("Failed to send ban notification");
   }
 };
+
+export async function sendDeletionEmail(
+  email: string,
+  name: string,
+  reason?: string
+) {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Account Deletion Notice - BDGAD",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Account Deletion Notice</h2>
+          <p>Dear ${name},</p>
+          <p>This email is to inform you that your account has been permanently deleted from the BDGAD system.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            ${reason ? `<p><strong>Reason for Deletion:</strong> ${reason}</p>` : ""}
+            <p><strong>Important Notice:</strong> All your data associated with this account has been permanently removed from our system.</p>
+          </div>
+          
+          <p>If you believe this action was taken in error, please contact our support team immediately.</p>
+          
+          <p>Best regards,<br>BDGAD Team</p>
+        </div>
+      `,
+      text: `Account Deletion Notice
+
+Dear ${name},
+
+This email is to inform you that your account has been permanently deleted from the BDGAD system.
+
+${reason ? `Reason for Deletion: ${reason}\n` : ""}
+Important Notice: All your data associated with this account has been permanently removed from our system.
+
+If you believe this action was taken in error, please contact our support team immediately.
+
+Best regards,
+BDGAD Team`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Deletion notification sent successfully to ${email}`);
+    return true;
+  } catch (error) {
+    console.error("Error sending deletion notification:", error);
+    throw new Error("Failed to send deletion notification");
+  }
+}

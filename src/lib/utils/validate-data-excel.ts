@@ -286,14 +286,6 @@ export const processExcelData = (
     const row = jsonData[i];
     const rowIndex = i + 2; // +2 because Excel rows start at 1 and first row is header
 
-    // Skip rows where all fields are empty or Role is 0
-    const isAllFieldsEmpty = !row.Name && !row.Email && !row.Phone && !row.Address && !row.Role;
-    const isRoleZero = Number(row.Role) === 0;
-    
-    if (isAllFieldsEmpty || isRoleZero) {
-      continue;
-    }
-
     // Ensure all expected columns exist in the row, even if they're empty
     const cleanedRow: ProcessedRowData = {
       Name: row.Name || "",
@@ -302,6 +294,14 @@ export const processExcelData = (
       Phone: row.Phone || "",
       Address: row.Address || "",
     };
+
+    // Skip rows where all fields are empty strings and Role is 0
+    const isAllFieldsEmpty = !cleanedRow.Name && !cleanedRow.Email && !cleanedRow.Phone && !cleanedRow.Address;
+    const isRoleZero = cleanedRow.Role === 0;
+    
+    if (isAllFieldsEmpty && isRoleZero) {
+      continue;
+    }
 
     processedData.push(cleanedRow);
   }
@@ -438,4 +438,39 @@ export const formatValidationErrors = (errors: string[]): string => {
   const remainingErrors =
     errors.length > 5 ? `\n... and ${errors.length - 5} more errors` : "";
   return `Validation errors found:\n${errorMessage}${remainingErrors}`;
+};
+
+export const validateRoleExcel = (jsonData: any[]): ValidationResult => {
+  const invalidRoles: { row: number; value: any }[] = [];
+
+  jsonData.forEach((row, index) => {
+    const roleValue = row.Role;
+    const roleNum = Number(roleValue);
+
+    // Skip empty rows
+    if (!roleValue && !row.Name && !row.Email && !row.Phone && !row.Address) {
+      return;
+    }
+
+    if (
+      roleValue === null ||
+      roleValue === undefined ||
+      roleValue === "" ||
+      isNaN(roleNum) ||
+      !Number.isInteger(roleNum) ||
+      roleNum < 1 ||
+      roleNum > 5
+    ) {
+      invalidRoles.push({ row: index + 2, value: roleValue }); // +2 because Excel rows start at 1 and first row is header
+    }
+  });
+
+  if (invalidRoles.length > 0) {
+    return {
+      isValid: false,
+      error: `Role must be a number between 1 and 5.`,
+    };
+  }
+
+  return { isValid: true };
 };

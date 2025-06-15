@@ -10,6 +10,7 @@ import {
   sendPasswordEmail,
   sendPasswordEmailsToUsers,
   sendRoleChangeEmail,
+  sendDeletionEmail,
 } from "@/lib/utils/email";
 
 // Define the type for user with roles
@@ -595,7 +596,7 @@ async function updateUserCore({
 export const updateUser = withAuth(updateUserCore);
 export type UpdateUserResult = Awaited<ReturnType<typeof updateUser>>;
 
-async function deleteUserCore({ id }: { id: number }) {
+async function deleteUserCore({ id, reason }: { id: number; reason?: string }) {
   try {
     console.log("Validating user ID for deletion:", id);
 
@@ -604,14 +605,14 @@ async function deleteUserCore({ id }: { id: number }) {
       throw new Error("Invalid user ID: must be a number");
     }
 
-    // Check if user exists
-    const existingUser = await db
-      .select({ id: users.id })
+    // Get user details before deletion for email notification
+    const userToDelete = await db
+      .select()
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
 
-    if (existingUser.length === 0) {
+    if (userToDelete.length === 0) {
       throw new Error(`User with ID ${id} does not exist`);
     }
 
@@ -622,6 +623,18 @@ async function deleteUserCore({ id }: { id: number }) {
       // Then delete the user
       await tx.delete(users).where(eq(users.id, id));
     });
+
+    // Send email notification
+    try {
+      await sendDeletionEmail(
+        userToDelete[0].email,
+        userToDelete[0].name,
+        reason
+      );
+    } catch (emailError) {
+      console.error("Failed to send deletion notification email:", emailError);
+      // Don't throw here - user deletion was successful, just email failed
+    }
   } catch (error) {
     console.error("Error in deleteUserCore:", error);
     throw error; // Re-throw the error to be handled by the caller

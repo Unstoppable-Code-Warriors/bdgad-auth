@@ -31,6 +31,7 @@ import {
   validateEmailNotExistInSystem,
   validateDuplicateEmail,
   validatePhoneNotExistInSystem,
+  validateDuplicatePhone,
 } from "@/lib/utils/validate-data-excel";
 
 interface ImportedUser {
@@ -78,7 +79,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       const worksheet = workbook.Sheets["table"];
       const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-      console.log("jsonData", jsonData);
       // Validate data is not empty
       const dataValidation = validateDataNotEmpty(jsonData);
       if (!dataValidation.isValid) {
@@ -86,46 +86,51 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         return;
       }
 
- // Validate columns
- const columnValidation = validateColumns(worksheet);
- if (!columnValidation.isValid) {
-  setValidationError(columnValidation.error!);
-   return;
- }
+      // Validate columns
+      const columnValidation = validateColumns(worksheet);
+      if (!columnValidation.isValid) {
+        setValidationError(columnValidation.error!);
+      }
+
       // Process and validate data
       const { processedData } = processExcelData(jsonData);
 
-// Validate account limit
-const accountLimitValidation = validateAccountLimit(processedData);
-if (!accountLimitValidation.isValid) {
-  setValidationError(accountLimitValidation.error!);
-}
+      // Validate account limit
+      const accountLimitValidation = validateAccountLimit(processedData);
+      if (!accountLimitValidation.isValid) {
+        setValidationError(accountLimitValidation.error!);
+      }
 
-// Validate duplicate emails
-const duplicateEmailValidation = validateDuplicateEmail(processedData);
-if (!duplicateEmailValidation.isValid) {
-  setValidationError(duplicateEmailValidation.error!);
-}
+      // Validate duplicate emails
+      const duplicateEmailValidation = validateDuplicateEmail(processedData);
+      if (!duplicateEmailValidation.isValid) {
+        setValidationError(duplicateEmailValidation.error!);
+      }
 
-// Validate emails don't exist in system
-const emailExistsValidation = validateEmailNotExistInSystem(
-  processedData,
-  users
-);
-if (!emailExistsValidation.isValid) {
-  setValidationError(emailExistsValidation.error!);
-}
+      // Validate duplicate phones
+      const duplicatePhoneValidation = validateDuplicatePhone(processedData);
+      if (!duplicatePhoneValidation.isValid) {
+        setValidationError(duplicatePhoneValidation.error!);
+      }
 
-// Validate phones don't exist in system
-const phoneExistsValidation = validatePhoneNotExistInSystem(
-  processedData,
-  users
-);
-if (!phoneExistsValidation.isValid) {
-  setValidationError(phoneExistsValidation.error!);
-}
+      // Validate emails don't exist in system
+      const emailExistsValidation = validateEmailNotExistInSystem(
+        processedData,
+        users
+      );
+      if (!emailExistsValidation.isValid) {
+        setValidationError(emailExistsValidation.error!);
+      }
 
-      console.log("processedData", processedData);  
+      // Validate phones don't exist in system
+      const phoneExistsValidation = validatePhoneNotExistInSystem(
+        processedData,
+        users
+      );
+      if (!phoneExistsValidation.isValid) {
+        setValidationError(phoneExistsValidation.error!);
+      }
+
       // Convert to ImportedUser format for table display
       const convertedUsers: ImportedUser[] = processedData.map((row: any, index: number) => ({
         id: `temp-${index}`,

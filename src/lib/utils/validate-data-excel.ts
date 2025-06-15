@@ -62,20 +62,33 @@ export const validateColumns = (
   })[0] as string[];
   const actualColumns = headerRow || [];
 
+  console.log("actualColumns", actualColumns);
   // Check missing required columns
-  const missingRequiredColumns = REQUIRED_COLUMNS.filter(
+  const missingRequiredColumns = EXPECTED_COLUMNS.filter(
     (col) => !actualColumns.includes(col)
   );
   if (missingRequiredColumns.length > 0) {
     return {
       isValid: false,
-      error: `Missing required column(s): ${missingRequiredColumns.join(", ")}`,
+      error: `Missing required column(s): ${missingRequiredColumns.join(", ")}. The value in the missing column will appear as empty in the preview data table.`,
     };
+  }
+
+  // Check for extra columns
+  const extraColumns = actualColumns.filter(
+    (col) => !EXPECTED_COLUMNS.includes(col)
+  );
+  console.log("extraColumns", extraColumns);
+  if (extraColumns.length > 0) {
+    return{
+      isValid: false,
+      error: `Extra column(s) found: ${extraColumns.join(", ")}. These columns will be ignored.`,
+    }
   }
 
   // Check if required columns are in correct order (A to E)
   const firstFiveColumns = actualColumns.slice(0, 5);
-  const hasAllRequiredColumns = REQUIRED_COLUMNS.every(col => 
+  const hasAllRequiredColumns = EXPECTED_COLUMNS.every(col => 
     firstFiveColumns.includes(col)
   );
   if (!hasAllRequiredColumns) {
@@ -273,6 +286,7 @@ export const processExcelData = (
     const row = jsonData[i];
     const rowIndex = i + 2; // +2 because Excel rows start at 1 and first row is header
 
+    // Ensure all expected columns exist in the row, even if they're empty
     const cleanedRow: ProcessedRowData = {
       Name: row.Name || "",
       Email: row.Email || "",
@@ -325,6 +339,30 @@ export const validateDuplicateEmail = (
     return {
       isValid: false,
       error: `The duplicate email(s) are: ${Array.from(duplicatedEmails).join(", ")}`,
+    };
+  }
+  return { isValid: true };
+};
+
+
+export const validateDuplicatePhone = (
+  processedData: ProcessedRowData[]
+): ValidationResult => {
+  const phoneCount = new Map<string, number>();
+  const duplicatedPhones = new Set<string>();
+
+  processedData.forEach((item) => {
+    const count = phoneCount.get(item.Phone) || 0;
+    phoneCount.set(item.Phone, count + 1);
+    if (count > 0) {
+      duplicatedPhones.add(item.Phone);
+    }
+  });
+
+  if (duplicatedPhones.size > 0) {
+    return {
+      isValid: false,
+      error: `The duplicate phone number(s) are: ${Array.from(duplicatedPhones).join(", ")}`,
     };
   }
   return { isValid: true };

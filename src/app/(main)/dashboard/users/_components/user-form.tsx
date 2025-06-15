@@ -172,6 +172,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
           <Input
             id="name"
             {...form.getInputProps("name")}
+            placeholder="John Doe"
             maxLength={50}
             disabled={isUpdateMode}
           />
@@ -185,6 +186,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
           <Input
             id="email"
             {...form.getInputProps("email")}
+            placeholder="example@gmail.com"
             disabled={isUpdateMode}
           />
           {form.errors.email && (
@@ -197,7 +199,7 @@ export function UserForm({ action, row, roles }: UserFormProps) {
           <Input
             id="phone"
             {...form.getInputProps("phone")}
-            placeholder="+1234567890"
+            placeholder="0393270112"
           />
           {form.errors.phone && (
             <div className="text-sm text-red-600">{form.errors.phone}</div>

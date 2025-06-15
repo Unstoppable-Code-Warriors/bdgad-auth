@@ -2,7 +2,7 @@
 
 import { db } from "@/db/drizzle";
 import { users, userRoles, roles } from "@/db/schema";
-import { count, eq, getTableColumns, or, ilike, inArray, and, not, sql } from "drizzle-orm";
+import { count, eq, getTableColumns, or, ilike, inArray, and, not, sql, desc } from "drizzle-orm";
 import { withAuth } from "@/lib/utils/auth";
 import bcrypt from "bcryptjs";
 import { FetchLimit } from "../constants";
@@ -83,7 +83,8 @@ async function getUsersCore({
         })
         .from(users)
         .leftJoin(userRoles, eq(users.id, userRoles.userId))
-        .leftJoin(roles, eq(userRoles.roleId, roles.id));
+        .leftJoin(roles, eq(userRoles.roleId, roles.id))
+        .orderBy(desc(users.createdAt));
 
       // Get users with their roles
       const usersWithRoles = search

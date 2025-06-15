@@ -154,11 +154,15 @@ export function UserForm({ action, row, roles }: UserFormProps) {
       dialog.closeAll();
     } catch (error) {
       console.error(error);
-      toast.error(
-        `Failed to ${isUpdateMode ? "update" : "create"} user${
-          !isUpdateMode ? ", please check if the email address has been used before." : "."
-        }`
-      );
+      if (error instanceof Error && error.message.includes("Phone number already exists")) {
+        toast.error("Phone number already exists in the system");
+      } else {
+        toast.error(
+          `Failed to ${isUpdateMode ? "update" : "create"} user${
+            !isUpdateMode ? ", please check if the email address has been used before." : "."
+          }`
+        );
+      }
     } finally {
       setLoading(false);
     }

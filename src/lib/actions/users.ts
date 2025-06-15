@@ -227,7 +227,7 @@ const validateStatus = (status: string): void => {
 };
 
 // Add new validation function for checking duplicate phone numbers
-const validatePhoneUniqueness = async (phone: string, userId: number): Promise<void> => {
+export const validatePhoneUniqueness = async (phone: string, userId: number): Promise<void> => {
   console.log("Validating phone uniqueness:", phone);
   const existingUser = await db
     .select({ id: users.id })
@@ -277,7 +277,11 @@ async function createUserCore({
     validateName(name);
 
     // Validate phone if present
-    validatePhone(metadata?.phone);
+    if (metadata?.phone) {
+      validatePhone(metadata.phone);
+      // Check if phone number already exists
+      await validatePhoneUniqueness(metadata.phone, 0); // Pass 0 as userId since this is a new user
+    }
 
     // Validate address if present
     validateAddress(metadata?.address);

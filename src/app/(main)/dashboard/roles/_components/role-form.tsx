@@ -77,7 +77,6 @@ const RoleForm = ({
 			if (isUpdateMode && roleData) {
 				// Update role
 				await updateRole(roleData.id, {
-					name: values.name,
 					description: values.description,
 				})
 				toast.success("Role updated successfully")

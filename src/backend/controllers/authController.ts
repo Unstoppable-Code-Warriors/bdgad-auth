@@ -85,7 +85,6 @@ export const login = async (c: ValidatedContext) => {
 		const token = await sign(payload, JWT_SECRET)
 
 		return c.json({
-			success: true,
 			token,
 			user: {
 				id: foundUser.id,
@@ -166,7 +165,6 @@ export const getUserInfo = async (c: ValidatedContext) => {
 		}
 
 		return c.json({
-			success: true,
 			user: userInfo,
 		})
 	} catch (error) {
@@ -198,7 +196,6 @@ export const verifyToken = async (c: ValidatedContext) => {
 			}
 
 			return c.json({
-				success: true,
 				valid: true,
 				user: {
 					id: parseInt(userPayload.sub),
@@ -209,7 +206,6 @@ export const verifyToken = async (c: ValidatedContext) => {
 			})
 		} catch (jwtError) {
 			return c.json({
-				success: true,
 				valid: false,
 				error: "Invalid or expired token",
 			})
@@ -291,7 +287,6 @@ export const changePassword = async (c: ValidatedContext) => {
 			.where(eq(users.id, user.id))
 
 		return c.json({
-			success: true,
 			message: "Password changed successfully",
 		})
 	} catch (error) {
@@ -365,7 +360,7 @@ export const forgotPassword = async (c: ValidatedContext) => {
 		}
 
 		return c.json({
-			success: true,
+			
 			message: "Password reset link has been sent to your email.",
 		})
 	} catch (error) {
@@ -478,7 +473,6 @@ export const resetPassword = async (c: ValidatedContext) => {
 		}
 
 		return c.json({
-			success: true,
 			message: "Password has been reset successfully",
 		})
 	} catch (error) {

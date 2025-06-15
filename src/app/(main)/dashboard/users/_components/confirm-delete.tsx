@@ -50,5 +50,5 @@ const ConfirmDeleteUser = ({
 		</div>
 	)
 }
-
 export default ConfirmDeleteUser
+

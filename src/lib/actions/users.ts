@@ -627,6 +627,6 @@ async function deleteUserCore({ id }: { id: number }) {
     throw error; // Re-throw the error to be handled by the caller
   }
 }
-
 export const deleteUser = withAuth(deleteUserCore);
 export type DeleteUserResult = Awaited<ReturnType<typeof deleteUser>>;
+

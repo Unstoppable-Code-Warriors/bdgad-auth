@@ -55,7 +55,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
   const [importedUsers, setImportedUsers] = useState<ImportedUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string[]>([]);
   const [saveValidationErrors, setSaveValidationErrors] = useState<string[]>([]);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -63,7 +63,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
   const processExcelFile = async (file: File) => {
     try {
       setIsUploading(true);
-      setValidationError(null);
+      setValidationError([]);
       setSaveValidationErrors([]); // Reset save validation errors
       // Read Excel file
       const data = await file.arrayBuffer();
@@ -72,7 +72,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       // Validate worksheet exists
       const worksheetValidation = validateWorksheetExists(workbook, "table");
       if (!worksheetValidation.isValid) {
-        setValidationError(worksheetValidation.error!);
+        setValidationError(prev => [...prev, worksheetValidation.error!]);
         return;
       }
 
@@ -82,36 +82,35 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       // Validate data is not empty
       const dataValidation = validateDataNotEmpty(jsonData);
       if (!dataValidation.isValid) {
-        setValidationError(dataValidation.error!);
+        setValidationError(prev => [...prev, dataValidation.error!]);
         return;
       }
 
       // Validate columns
       const columnValidation = validateColumns(worksheet);
       if (!columnValidation.isValid) {
-        setValidationError(columnValidation.error!);
+        setValidationError(prev => [...prev, columnValidation.error!]);
       }
 
       // Process and validate data
       const { processedData } = processExcelData(jsonData);
 
-      console.log("processedData", processedData);
       // Validate account limit
       const accountLimitValidation = validateAccountLimit(processedData);
       if (!accountLimitValidation.isValid) {
-        setValidationError(accountLimitValidation.error!);
+        setValidationError(prev => [...prev, accountLimitValidation.error!]);
       }
 
       // Validate duplicate emails
       const duplicateEmailValidation = validateDuplicateEmail(processedData);
       if (!duplicateEmailValidation.isValid) {
-        setValidationError(duplicateEmailValidation.error!);
+        setValidationError(prev => [...prev, duplicateEmailValidation.error!]);
       }
 
       // Validate duplicate phones
       const duplicatePhoneValidation = validateDuplicatePhone(processedData);
       if (!duplicatePhoneValidation.isValid) {
-        setValidationError(duplicatePhoneValidation.error!);
+        setValidationError(prev => [...prev, duplicatePhoneValidation.error!]);
       }
 
       // Validate emails don't exist in system
@@ -120,7 +119,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         users
       );
       if (!emailExistsValidation.isValid) {
-        setValidationError(emailExistsValidation.error!);
+        setValidationError(prev => [...prev, emailExistsValidation.error!]);
       }
 
       // Validate phones don't exist in system
@@ -129,25 +128,26 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         users
       );
       if (!phoneExistsValidation.isValid) {
-        setValidationError(phoneExistsValidation.error!);
+        setValidationError(prev => [...prev, phoneExistsValidation.error!]);
       }
 
 
-      // Convert to ImportedUser format for table display
-      const convertedUsers: ImportedUser[] = processedData.map((row: any, index: number) => ({
-        id: `temp-${index}`,
-        name: row.Name || "",
-        email: row.Email || "",
-        phone: row.Phone || "",
-        address: row.Address || "",
-        roleId: parseInt(row.Role) || 0,
-        errors: validateRow(row, index + 1),
-      }));
+        // Convert to ImportedUser format for table display
+        const convertedUsers: ImportedUser[] = processedData.map((row: any, index: number) => ({
+          id: `temp-${index}`,
+          name: row.Name || "",
+          email: row.Email || "",
+          phone: row.Phone || "",
+          address: row.Address || "",
+          roleId: parseInt(row.Role) || 0,
+          errors: validateRow(row, index + 1),
+        }));
 
-      setImportedUsers(convertedUsers);
+        setImportedUsers(convertedUsers);
+  
     } catch (error) {
       console.error("Error processing Excel file:", error);
-      setValidationError("Failed to process Excel file. Please check the file format.");
+      setValidationError(prev => [...prev, "Failed to process Excel file. Please check the file format."]);
     } finally {
       setIsUploading(false);
     }
@@ -283,17 +283,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
 
   const handleSave = async () => {
     setSaveValidationErrors([]); // Clear previous errors
+    setValidationError([]); // Clear validation error
     const errors: string[] = [];
-
-    // Filter out rows that have any validation errors
-    // const validUsers = importedUsers.filter((user) => {
-    //   // Check if required fields are filled
-    //   if (!user.name.trim() || !user.email.trim() || !user.roleId) {
-    //     return false;
-    //   }
-    //   // Check if there are any validation errors
-    //   return !user.errors;
-    // });
 
     // Check if there are any valid users to import
     if (importedUsers.length === 0) {
@@ -317,22 +308,26 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Check for duplicate emails within the import
     const emailSet = new Set<string>();
     const duplicateEmails = importedUsers.filter(user => {
-      if (emailSet.has(user.email)) {
+      const email = user.email.trim();
+      if (!email) return false; // Skip empty emails
+      if (emailSet.has(email)) {
         return true;
       }
-      emailSet.add(user.email);
+      emailSet.add(email);
       return false;
     });
     if (duplicateEmails.length > 0) {
-      errors.push(`Duplicate emails found: ${duplicateEmails.map(u => u.email).join(", ")}`);
+      errors.push(`Duplicate emails found: ${duplicateEmails.map(u => u.email.trim()).join(", ")}`);
     }
 
     // Check if emails already exist in the system
     const existingEmailSet = new Set<string>();
     const existingEmails = importedUsers.filter(user => {
-      const exists = users.some(existingUser => existingUser.email === user.email);
-      if (exists && !existingEmailSet.has(user.email)) {
-        existingEmailSet.add(user.email);
+      const email = user.email.trim();
+      if (!email) return false; // Skip empty emails
+      const exists = users.some(existingUser => existingUser.email === email);
+      if (exists && !existingEmailSet.has(email)) {
+        existingEmailSet.add(email);
         return true;
       }
       return false;
@@ -344,27 +339,30 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Check for duplicate phone numbers
     const phoneSet = new Set<string>();
     const duplicatePhones = importedUsers.filter(user => {
-      if (phoneSet.has(user.phone.toString())) {
+      const phone = user.phone ? String(user.phone).trim() : "";
+      if (!phone) return false; // Skip empty phones
+      if (phoneSet.has(phone)) {
         return true;
       }
-      phoneSet.add(user.phone.toString());
+      phoneSet.add(phone);
       return false;
     });
     if (duplicatePhones.length > 0) {
-      errors.push(`Duplicate phone numbers found: ${duplicatePhones.map(u => u.phone).join(", ")}`);
+      errors.push(`Duplicate phone numbers found: ${duplicatePhones.map(u => u.phone ? String(u.phone).trim() : "").join(", ")}`);
     }
     
 
     // Check if phone numbers already exist in the system
     const existingPhoneSet = new Set<string>();
     const existingPhones = importedUsers.filter(user => {
-      if (!user.phone) return false; // Skip if no phone number
+      const phone = user.phone ? String(user.phone).trim() : "";
+      if (!phone) return false; // Skip empty phones
       const exists = users.some(existingUser => {
         const metadata = existingUser.metadata as Record<string, any>;
-        return metadata?.phone === user.phone.toString();
+        return metadata?.phone === phone;
       });
-      if (exists && !existingPhoneSet.has(user.phone)) {
-        existingPhoneSet.add(user.phone);
+      if (exists && !existingPhoneSet.has(phone)) {
+        existingPhoneSet.add(phone);
         return true;
       }
       return false;
@@ -379,46 +377,48 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       setSaveValidationErrors(errors);
       return;
     }
+    setValidationError([]);
+    toast.success("Users imported successfully");
+   
+    // setIsLoading(true);
+    // try {
+    //   // Convert ImportedUser to RawUserData format
+    //   const rawUsers = importedUsers.map(user => ({
+    //     Name: user.name,
+    //     Email: user.email,
+    //     Role: user.roleId,
+    //     Phone: user.phone,
+    //     Address: user.address,
+    //   }));
 
-    setIsLoading(true);
-    try {
-      // Convert ImportedUser to RawUserData format
-      const rawUsers = importedUsers.map(user => ({
-        Name: user.name,
-        Email: user.email,
-        Role: user.roleId,
-        Phone: user.phone,
-        Address: user.address,
-      }));
+    //   // Convert to CreateUserInput format
+    //   const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
 
-      // Convert to CreateUserInput format
-      const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
+    //   await toast.promise(createUsers(convertedUsers), {
+    //     loading: "Creating users...",
+    //     success: `Successfully imported ${importedUsers.length} user(s)`,
+    //     error: (err) => {
+    //       if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
+    //         return "One or more email addresses already exist in the system. Please check your data and try again.";
+    //       }
+    //       return "Failed to create users. Please try again.";
+    //     },
+    //   });
 
-      await toast.promise(createUsers(convertedUsers), {
-        loading: "Creating users...",
-        success: `Successfully imported ${importedUsers.length} user(s)`,
-        error: (err) => {
-          if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
-            return "One or more email addresses already exist in the system. Please check your data and try again.";
-          }
-          return "Failed to create users. Please try again.";
-        },
-      });
-
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      router.refresh();
-    } catch (error) {
-      console.error("Error importing users:", error);
-      toast.error("Failed to import users");
-    } finally {
-      setIsLoading(false);
-    }
+    //   await queryClient.invalidateQueries({ queryKey: ["users"] });
+    //   router.refresh();
+    // } catch (error) {
+    //   console.error("Error importing users:", error);
+    //   toast.error("Failed to import users");
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
 
   const handleClearTable = () => {
     setImportedUsers([]);
-    setValidationError(null);
+    setValidationError([]);
     setSaveValidationErrors([]);
   };
 
@@ -448,9 +448,18 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         )}
       </div>
 
-      {validationError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{validationError}</p>
+      {(validationError.length > 0 || saveValidationErrors.length > 0) && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-2">
+          {validationError.map((error, index) => (
+            <p key={`validation-${index}`} className="text-sm text-red-600">
+              {error}
+            </p>
+          ))}
+          {saveValidationErrors.map((error, index) => (
+            <p key={`save-${index}`} className="text-sm text-red-600">
+              {error}
+            </p>
+          ))}
         </div>
       )}
 
@@ -492,16 +501,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               </Button>
             </div>
           </div>
-
-          {saveValidationErrors.length > 0 && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-2">
-              {saveValidationErrors.map((error, index) => (
-                <p key={index} className="text-sm text-red-600">
-                  {error}
-                </p>
-              ))}
-            </div>
-          )}
 
           <div className="rounded-md border">
             <Table>

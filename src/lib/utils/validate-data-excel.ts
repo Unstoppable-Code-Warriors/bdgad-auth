@@ -97,18 +97,6 @@ export const validateColumns = (
     };
   }
 
-  
-  // Check if required columns are in correct order (A to E)
-  const firstFiveColumns = actualColumns.slice(0, 5);
-  const hasAllRequiredColumns = EXPECTED_COLUMNS.every(col => 
-    firstFiveColumns.includes(col)
-  );
-  if (!hasAllRequiredColumns) {
-    return {
-      isValid: false,
-      error: `Required columns must be in the first 5 columns (A to E) of the template.`,
-    };
-  }
 
   return { isValid: true };
 };

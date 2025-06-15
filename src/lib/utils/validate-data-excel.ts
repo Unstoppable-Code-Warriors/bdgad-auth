@@ -62,7 +62,7 @@ export const validateColumns = (
   })[0] as string[];
   const actualColumns = headerRow || [];
 
-  console.log("actualColumns", actualColumns);
+
   // Check missing required columns
   const missingRequiredColumns = EXPECTED_COLUMNS.filter(
     (col) => !actualColumns.includes(col)
@@ -78,7 +78,7 @@ export const validateColumns = (
   const extraColumns = actualColumns.filter(
     (col) => !EXPECTED_COLUMNS.includes(col)
   );
-  console.log("extraColumns", extraColumns);
+
   if (extraColumns.length > 0) {
     return{
       isValid: false,

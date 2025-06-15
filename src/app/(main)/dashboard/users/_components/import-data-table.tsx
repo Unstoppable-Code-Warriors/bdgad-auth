@@ -131,6 +131,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         setValidationError(phoneExistsValidation.error!);
       }
 
+      console.log("processedData", processedData);
+
       // Convert to ImportedUser format for table display
       const convertedUsers: ImportedUser[] = processedData.map((row: any, index: number) => ({
         id: `temp-${index}`,
@@ -142,6 +144,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         errors: validateRow(row, index + 1),
       }));
 
+      console.log("convertedUsers", convertedUsers);
       setImportedUsers(convertedUsers);
     } catch (error) {
       console.error("Error processing Excel file:", error);
@@ -168,7 +171,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
 
   const validateRow = (row: any, rowIndex: number) => {
     const errors: { [key: string]: string } = {};
-    const hasAnyData = Object.values(row).some(value => value && value.toString().trim() !== "");
+    const hasAnyData = Object.values(row).some(value => value && String(value).trim() !== "");
 
     // Only validate if there's any data in the row
     if (!hasAnyData) {
@@ -176,10 +179,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     }
 
     // Name validation
-    if (!row.Name?.trim()) {
+    const nameStr = row.Name ? String(row.Name) : "";
+    if (!nameStr.trim()) {
       errors.name = "Name is required";
     } else {
-      const trimmedName = row.Name.trim();
+      const trimmedName = nameStr.trim();
       if (trimmedName.length < 3 || trimmedName.length > 50) {
         errors.name = "Name must be between 3-50 characters";
       }
@@ -194,9 +198,10 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     }
 
     // Email validation
-    if (!row.Email?.trim()) {
+    const emailStr = row.Email ? String(row.Email) : "";
+    if (!emailStr.trim()) {
       errors.email = "Email is required";
-    } else if (!/^\S+@\S+$/.test(row.Email.trim())) {
+    } else if (!/^\S+@\S+$/.test(emailStr.trim())) {
       errors.email = "Invalid email format";
     }
 
@@ -211,8 +216,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     }
 
     // Address validation (optional)
-    if (row.Address?.trim()) {
-      const address = row.Address.trim();
+    if (row.Address) {
+      const address = String(row.Address).trim();
       if (address.length > 200) {
         errors.address = "Address must be 200 characters or less";
       }

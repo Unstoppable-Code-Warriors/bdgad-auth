@@ -242,30 +242,13 @@ if (!phoneExistsValidation.isValid) {
             Role: field === 'roleId' ? value : user.roleId,
           };
           
-          // Only validate the changed field
-          const errors = user.errors ? { ...user.errors } : {};
-          const fieldErrors = validateRow(row, 0);
+          // Validate the entire row
+          const errors = validateRow(row, 0);
           
-          // Clear error for the changed field
-          if (field === 'name') delete errors.name;
-          if (field === 'email') delete errors.email;
-          if (field === 'phone') delete errors.phone;
-          if (field === 'address') delete errors.address;
-          if (field === 'roleId') delete errors.roleId;
-
-          // Add new errors if validation fails
-          if (fieldErrors) {
-            if (field === 'name' && fieldErrors.name) errors.name = fieldErrors.name;
-            if (field === 'email' && fieldErrors.email) errors.email = fieldErrors.email;
-            if (field === 'phone' && fieldErrors.phone) errors.phone = fieldErrors.phone;
-            if (field === 'address' && fieldErrors.address) errors.address = fieldErrors.address;
-            if (field === 'roleId' && fieldErrors.roleId) errors.roleId = fieldErrors.roleId;
-          }
-
           return { 
             ...user, 
             [field]: value, 
-            errors: Object.keys(errors).length > 0 ? errors : undefined 
+            errors: errors
           };
         }
         return user;
@@ -281,7 +264,6 @@ if (!phoneExistsValidation.isValid) {
       phone: "",
       address: "",
       roleId: 0,
-      errors: undefined, // Don't show validation errors for an empty row
     };
     setImportedUsers((prev) => [...prev, newUser]);
   };
@@ -295,33 +277,37 @@ if (!phoneExistsValidation.isValid) {
     const errors: string[] = [];
 
     // Filter out rows that have any validation errors
-    const validUsers = importedUsers.filter((user) => !user.errors);
-    
+    // const validUsers = importedUsers.filter((user) => {
+    //   // Check if required fields are filled
+    //   if (!user.name.trim() || !user.email.trim() || !user.roleId) {
+    //     return false;
+    //   }
+    //   // Check if there are any validation errors
+    //   return !user.errors;
+    // });
+
     // Check if there are any valid users to import
-    if (validUsers.length === 0) {
-      errors.push("No valid users to import");
+    if (importedUsers.length === 0) {
+      errors.push("No valid users to import. Please ensure all required fields (Name, Email, Role) are filled correctly.");
     }
 
-    // Check for empty rows (rows with no data)
-    const emptyRows = validUsers.filter(user => 
-      !user.name.trim() && 
-      !user.email.trim() && 
-      !user.phone.trim() && 
-      !user.address.trim() && 
+    const emptyRowsRequired = importedUsers.filter(user => 
+      !user.name.trim() ||
+      !user.email.trim() ||  
       !user.roleId
     );
-    if (emptyRows.length > 0) {
-      errors.push("Please remove empty rows before importing");
+    if (emptyRowsRequired.length > 0) {
+      errors.push("Please fill in all required fields before importing");
     }
 
     // Check account limit
-    if (validUsers.length > 50) {
+    if (importedUsers.length > 50) {
       errors.push("Cannot import more than 50 accounts at once");
     }
 
     // Check for duplicate emails within the import
     const emailSet = new Set<string>();
-    const duplicateEmails = validUsers.filter(user => {
+    const duplicateEmails = importedUsers.filter(user => {
       if (emailSet.has(user.email)) {
         return true;
       }
@@ -334,7 +320,7 @@ if (!phoneExistsValidation.isValid) {
 
     // Check if emails already exist in the system
     const existingEmailSet = new Set<string>();
-    const existingEmails = validUsers.filter(user => {
+    const existingEmails = importedUsers.filter(user => {
       const exists = users.some(existingUser => existingUser.email === user.email);
       if (exists && !existingEmailSet.has(user.email)) {
         existingEmailSet.add(user.email);
@@ -346,45 +332,79 @@ if (!phoneExistsValidation.isValid) {
       errors.push(`The following emails already exist in the system: ${Array.from(existingEmailSet).join(", ")}`);
     }
 
+    // Check for duplicate phone numbers
+    const phoneSet = new Set<string>();
+    const duplicatePhones = importedUsers.filter(user => {
+      if (phoneSet.has(user.phone.toString())) {
+        return true;
+      }
+      phoneSet.add(user.phone.toString());
+      return false;
+    });
+    if (duplicatePhones.length > 0) {
+      errors.push(`Duplicate phone numbers found: ${duplicatePhones.map(u => u.phone).join(", ")}`);
+    }
+    
+
+    // Check if phone numbers already exist in the system
+    const existingPhoneSet = new Set<string>();
+    const existingPhones = importedUsers.filter(user => {
+      if (!user.phone) return false; // Skip if no phone number
+      const exists = users.some(existingUser => {
+        const metadata = existingUser.metadata as Record<string, any>;
+        return metadata?.phone === user.phone.toString();
+      });
+      if (exists && !existingPhoneSet.has(user.phone)) {
+        existingPhoneSet.add(user.phone);
+        return true;
+      }
+      return false;
+    });
+  
+    if (existingPhones.length > 0) {
+      errors.push(`The following phone numbers already exist in the system: ${Array.from(existingPhoneSet).join(", ")}`);
+    }
+
     // If there are any validation errors, display them and return
     if (errors.length > 0) {
       setSaveValidationErrors(errors);
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Convert ImportedUser to RawUserData format
-      const rawUsers = validUsers.map(user => ({
-        Name: user.name,
-        Email: user.email,
-        Role: user.roleId,
-        Phone: user.phone,
-        Address: user.address,
-      }));
+    toast.success("Importing users...");
+    // setIsLoading(true);
+    // try {
+    //   // Convert ImportedUser to RawUserData format
+    //   const rawUsers = validUsers.map(user => ({
+    //     Name: user.name,
+    //     Email: user.email,
+    //     Role: user.roleId,
+    //     Phone: user.phone,
+    //     Address: user.address,
+    //   }));
 
-      // Convert to CreateUserInput format
-      const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
+    //   // Convert to CreateUserInput format
+    //   const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
 
-      await toast.promise(createUsers(convertedUsers), {
-        loading: "Creating users...",
-        success: `Successfully imported ${validUsers.length} user(s)`,
-        error: (err) => {
-          if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
-            return "One or more email addresses already exist in the system. Please check your data and try again.";
-          }
-          return "Failed to create users. Please try again.";
-        },
-      });
+    //   await toast.promise(createUsers(convertedUsers), {
+    //     loading: "Creating users...",
+    //     success: `Successfully imported ${validUsers.length} user(s)`,
+    //     error: (err) => {
+    //       if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
+    //         return "One or more email addresses already exist in the system. Please check your data and try again.";
+    //       }
+    //       return "Failed to create users. Please try again.";
+    //     },
+    //   });
 
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      router.refresh();
-    } catch (error) {
-      console.error("Error importing users:", error);
-      toast.error("Failed to import users");
-    } finally {
-      setIsLoading(false);
-    }
+    //   await queryClient.invalidateQueries({ queryKey: ["users"] });
+    //   router.refresh();
+    // } catch (error) {
+    //   console.error("Error importing users:", error);
+    //   toast.error("Failed to import users");
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
 

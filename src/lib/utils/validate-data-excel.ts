@@ -360,6 +360,28 @@ export const validateEmailNotExistInSystem = (
   return { isValid: true };
 };
 
+export const validatePhoneNotExistInSystem = (
+  processedData: ProcessedRowData[],
+  existingUsers: Array<{ metadata: unknown }>
+): ValidationResult => {
+  const duplicatedPhones = processedData.filter((item) => {
+    if (!item.Phone) return false; // Skip if no phone number
+    return existingUsers.some((user) => {
+      const metadata = user.metadata as Record<string, any>;
+      return metadata?.phone === item.Phone;
+    });
+  });
+
+  if (duplicatedPhones.length > 0) {
+    const duplicatePhoneList = duplicatedPhones.map(item => item.Phone).join(", ");
+    return {
+      isValid: false,
+      error: `The following phone number(s) already exist in the system: ${duplicatePhoneList}`,
+    };
+  }
+  return { isValid: true };
+};
+
 // Utility functions
 export const formatValidationErrors = (errors: string[]): string => {
   const errorMessage = errors.slice(0, 5).join("\n"); // Show first 5 errors

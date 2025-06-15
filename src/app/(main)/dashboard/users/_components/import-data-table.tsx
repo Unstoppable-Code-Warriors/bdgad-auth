@@ -30,6 +30,7 @@ import {
   validateAccountLimit,
   validateEmailNotExistInSystem,
   validateDuplicateEmail,
+  validatePhoneNotExistInSystem,
 } from "@/lib/utils/validate-data-excel";
 
 interface ImportedUser {
@@ -115,6 +116,14 @@ if (!emailExistsValidation.isValid) {
   setValidationError(emailExistsValidation.error!);
 }
 
+// Validate phones don't exist in system
+const phoneExistsValidation = validatePhoneNotExistInSystem(
+  processedData,
+  users
+);
+if (!phoneExistsValidation.isValid) {
+  setValidationError(phoneExistsValidation.error!);
+}
 
       console.log("processedData", processedData);  
       // Convert to ImportedUser format for table display

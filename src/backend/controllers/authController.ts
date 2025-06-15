@@ -312,10 +312,11 @@ export const forgotPassword = async (c: ValidatedContext) => {
 
 		// Check if user exists
 		if (user.length === 0) {
-			return c.json({ 
-				error: "Email not found in the system",
-				details: "The provided email address is not registered in our system."
-			}, 500)
+			return c.json({
+				status: 500,
+				message: "Email not found in the system",
+				code: "EMAIL_NOT_FOUND",
+			})
 		}
 
 		const foundUser = user[0]
@@ -323,7 +324,8 @@ export const forgotPassword = async (c: ValidatedContext) => {
 		// Check if user is active
 		if (foundUser.status !== "active") {
 			return c.json({ 
-				error: "Account is not active",
+				message: "Account is not active",
+				code: "ACCOUNT_INACTIVE",
 				details: "The account associated with this email is not active."
 			}, 500)
 		}

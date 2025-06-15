@@ -33,7 +33,7 @@ export const jwtAuth = async (c: Context, next: Next) => {
 				.limit(1)
 
 			if (!user || user.status !== "active") {
-				return c.json({ error: "Account is not active" }, 401)
+				return c.json({ status: 401,message: "Account is not active", code: "ACCOUNT_INACTIVE" })
 			}
 
 			// Add user info to context

@@ -30,12 +30,17 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "name",
     header: "Name",
+    cell: ({ row }) => (
+      <div className="max-w-[120px] truncate" title={row.original.name}>
+        {row.original.name}
+      </div>
+    ),
   },
   {
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <div className="max-w-[130px] " title={row.original.email}>
+      <div className="max-w-[170px] truncate" title={row.original.email}>
         {row.original.email}
       </div>
     ),

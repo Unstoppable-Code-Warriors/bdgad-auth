@@ -53,10 +53,10 @@ export function UserForm({ action, row, roles }: UserFormProps) {
       
         if (trimmedValue.length === 0) return "Name is required";
       
-        const validPattern = /^[a-zA-ZÀ-ỹ0-9]+([ _-]?[a-zA-ZÀ-ỹ0-9]+)*$/u;
+        const validPattern = /^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/u;
       
         if (!validPattern.test(trimmedValue)) {
-          return "Name can only contain letters (including Vietnamese), numbers, single spaces, hyphens (-), and underscores (_)";
+          return "Name can only contain letters (including Vietnamese) and single spaces between words";
         }
       
         if (trimmedValue.length > 50) return "Name must be 50 characters or less";

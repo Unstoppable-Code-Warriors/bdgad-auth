@@ -373,12 +373,13 @@ export const validateDuplicatePhone = (
 
   processedData.forEach((item) => {
     // Skip empty phone numbers
-    if (!item.Phone || item.Phone.trim() === "") return;
+    const phoneStr = item.Phone ? String(item.Phone) : "";
+    if (!phoneStr || phoneStr.trim() === "") return;
     
-    const count = phoneCount.get(item.Phone) || 0;
-    phoneCount.set(item.Phone, count + 1);
+    const count = phoneCount.get(phoneStr) || 0;
+    phoneCount.set(phoneStr, count + 1);
     if (count > 0) {
-      duplicatedPhones.add(item.Phone);
+      duplicatedPhones.add(phoneStr);
     }
   });
 

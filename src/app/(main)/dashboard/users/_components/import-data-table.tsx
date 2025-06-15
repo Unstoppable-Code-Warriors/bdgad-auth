@@ -132,7 +132,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         setValidationError(phoneExistsValidation.error!);
       }
 
-      console.log("processedData", processedData);
 
       // Convert to ImportedUser format for table display
       const convertedUsers: ImportedUser[] = processedData.map((row: any, index: number) => ({
@@ -145,7 +144,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         errors: validateRow(row, index + 1),
       }));
 
-      console.log("convertedUsers", convertedUsers);
       setImportedUsers(convertedUsers);
     } catch (error) {
       console.error("Error processing Excel file:", error);
@@ -510,11 +508,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
+                  <TableHead>Name <span className="text-red-500">*</span></TableHead>
+                  <TableHead>Email <span className="text-red-500">*</span></TableHead>
+                  <TableHead>Phone <span className="text-red-500">*</span></TableHead>
                   <TableHead className="w-[300px]">Address</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Role <span className="text-red-500">*</span></TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>

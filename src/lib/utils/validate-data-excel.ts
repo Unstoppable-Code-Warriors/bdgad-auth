@@ -104,11 +104,11 @@ export const validateName = (name: string): ValidationResult => {
   if (/\s{2,}/.test(trimmedName)) {
     return { isValid: false, error: "Name cannot contain multiple consecutive spaces" };
   }
-  // Allow Vietnamese characters, letters, numbers, single spaces, and specific special characters
-  if (!/^[a-zA-ZÀ-ỹ0-9\s\-_]+$/.test(trimmedName)) {
+  // Allow only letters (including Vietnamese) and single spaces
+  if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
     return {
       isValid: false,
-      error: "Name can only contain letters (including Vietnamese), numbers, single spaces, hyphens (-), and underscores (_)",
+      error: "Name can only contain letters (including Vietnamese) and single spaces between words",
     };
   }
   return { isValid: true };
@@ -301,6 +301,30 @@ export const validateAccountLimit = (
     return {
       isValid: false,
       error: `Too many accounts: ${processedData.length}. Maximum allowed is ${MAX_ACCOUNTS_LIMIT} accounts.`,
+    };
+  }
+  return { isValid: true };
+};
+
+export const validateDuplicateEmail = (
+  processedData: ProcessedRowData[]
+): ValidationResult => {
+  const emailCount = new Map<string, number>();
+  const duplicatedEmails = new Set<string>();
+
+  // Count occurrences of each email
+  processedData.forEach((item) => {
+    const count = emailCount.get(item.Email) || 0;
+    emailCount.set(item.Email, count + 1);
+    if (count > 0) {
+      duplicatedEmails.add(item.Email);
+    }
+  });
+
+  if (duplicatedEmails.size > 0) {
+    return {
+      isValid: false,
+      error: `The duplicate email(s) are: ${Array.from(duplicatedEmails).join(", ")}`,
     };
   }
   return { isValid: true };

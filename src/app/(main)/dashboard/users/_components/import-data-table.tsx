@@ -28,9 +28,8 @@ import {
   validateColumns,
   processExcelData,
   validateAccountLimit,
-  validateNoDataAfterProcessing,
   validateEmailNotExistInSystem,
-  formatValidationErrors,
+  validateDuplicateEmail,
 } from "@/lib/utils/validate-data-excel";
 
 interface ImportedUser {
@@ -86,8 +85,36 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         return;
       }
 
+ // Validate columns
+ const columnValidation = validateColumns(worksheet);
+ if (!columnValidation.isValid) {
+  setValidationError(columnValidation.error!);
+   return;
+ }
       // Process and validate data
-      const { processedData, validationErrors } = processExcelData(jsonData);
+      const { processedData } = processExcelData(jsonData);
+
+// Validate account limit
+const accountLimitValidation = validateAccountLimit(processedData);
+if (!accountLimitValidation.isValid) {
+  setValidationError(accountLimitValidation.error!);
+}
+
+// Validate duplicate emails
+const duplicateEmailValidation = validateDuplicateEmail(processedData);
+if (!duplicateEmailValidation.isValid) {
+  setValidationError(duplicateEmailValidation.error!);
+}
+
+// Validate emails don't exist in system
+const emailExistsValidation = validateEmailNotExistInSystem(
+  processedData,
+  users
+);
+if (!emailExistsValidation.isValid) {
+  setValidationError(emailExistsValidation.error!);
+}
+
 
       console.log("processedData", processedData);  
       // Convert to ImportedUser format for table display
@@ -98,7 +125,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         phone: row.Phone || "",
         address: row.Address || "",
         roleId: parseInt(row.Role) || 0,
-        errors: validateRow(row),
+        errors: validateRow(row, index + 1),
       }));
 
       setImportedUsers(convertedUsers);
@@ -125,7 +152,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     maxFiles: 1,
   });
 
-  const validateRow = (row: any) => {
+  const validateRow = (row: any, rowIndex: number) => {
     const errors: { [key: string]: string } = {};
     const hasAnyData = Object.values(row).some(value => value && value.toString().trim() !== "");
 
@@ -138,12 +165,17 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     if (!row.Name?.trim()) {
       errors.name = "Name is required";
     } else {
-      const namePattern = /^[a-zA-ZÀ-ỹ0-9]+([ _-]?[a-zA-ZÀ-ỹ0-9]+)*$/u;
-      if (!namePattern.test(row.Name.trim())) {
-        errors.name = "Name can only contain letters (including Vietnamese), numbers, hyphens (-), and underscores (_)";
+      const trimmedName = row.Name.trim();
+      if (trimmedName.length < 3 || trimmedName.length > 50) {
+        errors.name = "Name must be between 3-50 characters";
       }
-      if (row.Name.trim().length > 50) {
-        errors.name = "Name must be 50 characters or less";
+      // Check for multiple consecutive spaces
+      if (/\s{2,}/.test(trimmedName)) {
+        errors.name = "Name cannot contain multiple consecutive spaces";
+      }
+      // Allow only letters (including Vietnamese) and single spaces
+      if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
+        errors.name = "Name can only contain letters (including Vietnamese) and single spaces between words";
       }
     }
 
@@ -203,7 +235,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
           
           // Only validate the changed field
           const errors = user.errors ? { ...user.errors } : {};
-          const fieldErrors = validateRow(row);
+          const fieldErrors = validateRow(row, 0);
           
           // Clear error for the changed field
           if (field === 'name') delete errors.name;
@@ -346,6 +378,13 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     }
   };
 
+
+  const handleClearTable = () => {
+    setImportedUsers([]);
+    setValidationError(null);
+    setSaveValidationErrors([]);
+  };
+
   return (
     <div className="space-y-4">
       <div
@@ -395,7 +434,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setImportedUsers([])}
+                onClick={handleClearTable}
                 disabled={isLoading}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -453,9 +492,9 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                           disabled={isLoading}
                         />
                         {user.errors?.name && (
-                          <p className="text-sm text-red-500 break-words">
-                            {user.errors.name}
-                          </p>
+                          <div className="text-sm text-red-500 max-w-[300px]">
+                          <p className="whitespace-normal break-words">{user.errors.name}</p>
+                        </div>
                         )}
                       </div>
                     </TableCell>

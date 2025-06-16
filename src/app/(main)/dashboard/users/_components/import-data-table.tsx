@@ -400,41 +400,42 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       return;
     }
     setValidationError([]);
-    toast.success("Users imported successfully");
-   
-    // setIsLoading(true);
-    // try {
-    //   // Convert ImportedUser to RawUserData format
-    //   const rawUsers = importedUsers.map(user => ({
-    //     Name: user.name,
-    //     Email: user.email,
-    //     Role: user.roleId,
-    //     Phone: user.phone,
-    //     Address: user.address,
-    //   }));
+    setIsLoading(true);
+    try {
+      // Convert ImportedUser to RawUserData format
+      const rawUsers = importedUsers.map(user => ({
+        Name: user.name,
+        Email: user.email,
+        Role: user.roleId,
+        Phone: user.phone,
+        Address: user.address,
+      }));
 
-    //   // Convert to CreateUserInput format
-    //   const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
+      // Convert to CreateUserInput format
+      const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
 
-    //   await toast.promise(createUsers(convertedUsers), {
-    //     loading: "Creating users...",
-    //     success: `Successfully imported ${importedUsers.length} user(s)`,
-    //     error: (err) => {
-    //       if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
-    //         return "One or more email addresses already exist in the system. Please check your data and try again.";
-    //       }
-    //       return "Failed to create users. Please try again.";
-    //     },
-    //   });
+      await toast.promise(createUsers(convertedUsers), {
+        loading: "Creating users...",
+        success: `Successfully imported ${importedUsers.length} user(s)`,
+        error: (err) => {
+          if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
+            return "One or more email addresses already exist in the system. Please check your data and try again.";
+          }
+          return "Failed to create users. Please try again.";
+        },
+      });
 
-    //   await queryClient.invalidateQueries({ queryKey: ["users"] });
-    //   router.refresh();
-    // } catch (error) {
-    //   console.error("Error importing users:", error);
-    //   toast.error("Failed to import users");
-    // } finally {
-    //   setIsLoading(false);
-    // }
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
+      router.refresh();
+      setImportedUsers([]);
+      setValidationError([]);
+      setSaveValidationErrors([]);
+    } catch (error) {
+      console.error("Error importing users:", error);
+      toast.error("Failed to import users");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
 

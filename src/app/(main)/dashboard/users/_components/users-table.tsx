@@ -17,7 +17,7 @@ import ImportExcelForm from "./import-excel-form";
 import ConfirmResetPassword from "./confirm-reset-password";
 import UserDetailModal from "./user-detail-modal";
 import ConfirmBan from "./confirm-ban";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "@/lib/actions/users";
 
@@ -257,18 +257,38 @@ const ActionsMenu = ({
   );
 };
 
+// Add debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export function UsersTable() {
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   
+  // Add debounced search
+  const debouncedSearch = useDebounce(search, 500); // 500ms delay
+  
   // Query for paginated users (for table display)
   const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
-    queryKey: ["users", page, search, pageSize],
+    queryKey: ["users", page, debouncedSearch, pageSize],
     queryFn: () => getUsers({ 
       page, 
-      search,
+      search: debouncedSearch,
       limit: pageSize
     }),
     staleTime: 0,
@@ -341,8 +361,8 @@ export function UsersTable() {
         pageSize={pageSize}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
-        searchKey="name"
-        searchPlaceholder="Search by name or email..."
+        searchKey="email"
+        searchPlaceholder="Search by email..."
         enableFiltering={true}
         onSearch={handleSearch}
         searchValue={search}

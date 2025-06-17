@@ -19,7 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createUsers, GetUsersResult } from "@/lib/actions/users";
 import { GetRolesResult } from "@/lib/actions/roles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader, Plus, Trash2, Upload } from "lucide-react";
+import { Loader, Plus, Trash2, Upload, Check } from "lucide-react";
 import * as XLSX from "xlsx";
 import convertRawUsersToCreateUserInput from "@/lib/utils/convert-data";
 import {
@@ -438,6 +438,157 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     }
   };
 
+  const handleCheck = () => {
+    setValidationError([]); // Clear previous validation errors
+    const errors: string[] = [];
+
+    // Check if there are any users to validate
+    if (importedUsers.length === 0) {
+      errors.push("No data to validate. Please import or add some rows first.");
+      setValidationError(errors);
+      return;
+    }
+
+    // Check for empty required fields
+    const emptyRowsRequired = importedUsers.filter(user => 
+      !user.name.trim() ||
+      !user.email.trim() ||  
+      !user.roleId
+    );
+    if (emptyRowsRequired.length > 0) {
+      errors.push("Please fill in all required fields (Name, Email, Role) before checking");
+    }
+
+    // Check account limit
+    if (importedUsers.length > 50) {
+      errors.push("Cannot import more than 50 accounts at once");
+    }
+
+    // Check for duplicate emails within the import
+    const emailMap = new Map<string, number[]>();
+    importedUsers.forEach((user, index) => {
+      const email = user.email.trim();
+      if (!email) return; // Skip empty emails
+      const existingRows = emailMap.get(email) || [];
+      emailMap.set(email, [...existingRows, index + 1]);
+    });
+
+    // Find all rows with duplicate emails
+    emailMap.forEach((rows, email) => {
+      if (rows.length > 1) {
+        errors.push(`Duplicate emails found in rows: ${rows.sort((a, b) => a - b).join(", ")}`);
+      }
+    });
+
+    // Check if emails already exist in the system
+    const existingEmailRows: number[] = [];
+    importedUsers.forEach((user, index) => {
+      const email = user.email.trim();
+      if (!email) return; // Skip empty emails
+      if (users.some(existingUser => existingUser.email === email)) {
+        existingEmailRows.push(index + 1);
+      }
+    });
+    if (existingEmailRows.length > 0) {
+      errors.push(`The following emails already exist in the system (rows: ${existingEmailRows.sort((a, b) => a - b).join(", ")})`);
+    }
+
+    // Check for duplicate phone numbers
+    const phoneMap = new Map<string, number[]>();
+    importedUsers.forEach((user, index) => {
+      const phone = user.phone ? String(user.phone).trim() : "";
+      if (!phone) return; // Skip empty phones
+      const existingRows = phoneMap.get(phone) || [];
+      phoneMap.set(phone, [...existingRows, index + 1]);
+    });
+
+    // Find all rows with duplicate phones
+    phoneMap.forEach((rows, phone) => {
+      if (rows.length > 1) {
+        errors.push(`Duplicate phone numbers found in rows: ${rows.sort((a, b) => a - b).join(", ")}`);
+      }
+    });
+
+    // Check if phone numbers already exist in the system
+    const existingPhoneRows: number[] = [];
+    importedUsers.forEach((user, index) => {
+      const phone = user.phone ? String(user.phone).trim() : "";
+      if (!phone) return; // Skip empty phones
+      if (users.some(existingUser => {
+        const metadata = existingUser.metadata as Record<string, any>;
+        return metadata?.phone === phone;
+      })) {
+        existingPhoneRows.push(index + 1);
+      }
+    });
+    if (existingPhoneRows.length > 0) {
+      errors.push(`The following phone numbers already exist in the system (rows: ${existingPhoneRows.sort((a, b) => a - b).join(", ")})`);
+    }
+
+    // Validate each row's data format
+    importedUsers.forEach((user, index) => {
+      const rowNumber = index + 1;
+      
+      // Name validation
+      if (user.name) {
+        const nameStr = user.name.trim();
+        if (nameStr.length < 3 || nameStr.length > 50) {
+          errors.push(`Row ${rowNumber}: Name must be between 3-50 characters`);
+        }
+        if (/\s{2,}/.test(nameStr)) {
+          errors.push(`Row ${rowNumber}: Name cannot contain multiple consecutive spaces`);
+        }
+        if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(nameStr)) {
+          errors.push(`Row ${rowNumber}: Name can only contain letters (including Vietnamese) and single spaces between words`);
+        }
+      }
+
+      // Email validation
+      if (user.email) {
+        const emailStr = user.email.trim();
+        if (!/^\S+@\S+$/.test(emailStr)) {
+          errors.push(`Row ${rowNumber}: Invalid email format`);
+        }
+      }
+
+      // Phone validation
+      if (user.phone) {
+        const phone = String(user.phone).trim();
+        if (!/^\d+$/.test(phone)) {
+          errors.push(`Row ${rowNumber}: Phone must contain only digits`);
+        }
+        if (phone.length !== 10) {
+          errors.push(`Row ${rowNumber}: Phone must be exactly 10 digits`);
+        }
+      }
+
+      // Address validation
+      if (user.address) {
+        const address = user.address.trim();
+        if (address.length > 200) {
+          errors.push(`Row ${rowNumber}: Address must be 200 characters or less`);
+        }
+        if (/\s{2,}/.test(address)) {
+          errors.push(`Row ${rowNumber}: Address cannot contain multiple consecutive spaces`);
+        }
+        if (!/^[a-zA-ZÀ-ỹ0-9\s,\.\/]+$/.test(address)) {
+          errors.push(`Row ${rowNumber}: Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: , . /`);
+        }
+      }
+
+      // Role validation
+      if (!user.roleId) {
+        errors.push(`Row ${rowNumber}: Role is required`);
+      } else {
+        const roleNum = Number(user.roleId);
+        if (isNaN(roleNum) || !Number.isInteger(roleNum) || roleNum < 1 || roleNum > 5) {
+          errors.push(`Row ${rowNumber}: Role must be a number between 1 and 5`);
+        }
+      }
+    });
+
+    setValidationError(errors);
+  };
 
   const handleClearTable = () => {
     setImportedUsers([]);
@@ -490,7 +641,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">Preview Data</h3>
-            <div className="space-x-2">
+            <div className="space-x-2 items-start">
               <Button
                 variant="outline"
                 size="sm"
@@ -499,6 +650,15 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Row
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCheck}
+                disabled={isLoading}
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Check
               </Button>
               <Button
                 variant="outline"
@@ -512,6 +672,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               <Button
                 onClick={handleSave}
                 disabled={isLoading || importedUsers.some((user) => user.errors)}
+                className="bg-primary text-white hover:bg-primary/90"
+                size="sm"
               >
                 {isLoading ? (
                   <>
@@ -529,6 +691,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">No.</TableHead>
                   <TableHead>Name <span className="text-red-500">*</span></TableHead>
                   <TableHead>Email <span className="text-red-500">*</span></TableHead>
                   <TableHead>Phone <span className="text-red-500">*</span></TableHead>
@@ -538,8 +701,9 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {importedUsers.map((user) => (
+                {importedUsers.map((user, index) => (
                   <TableRow key={user.id}>
+                    <TableCell className="text-center">{index + 1}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         <Input

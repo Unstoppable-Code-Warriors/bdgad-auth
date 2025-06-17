@@ -331,50 +331,59 @@ export const validateAccountLimit = (
 export const validateDuplicateEmail = (
   processedData: ProcessedRowData[]
 ): ValidationResult => {
-  const emailCount = new Map<string, number>();
-  const duplicatedEmails = new Set<string>();
+  const emailMap = new Map<string, number[]>();
+  const duplicatedRows: number[] = [];
 
-  // Count occurrences of each email
-  processedData.forEach((item) => {
-    const count = emailCount.get(item.Email) || 0;
-    emailCount.set(item.Email, count + 1);
-    if (count > 0) {
-      duplicatedEmails.add(item.Email);
+  // Track row numbers for each email
+  processedData.forEach((item, index) => {
+    const rowNumber = index + 1; // +1 because first row is header
+    const existingRows = emailMap.get(item.Email) || [];
+    emailMap.set(item.Email, [...existingRows, rowNumber]);
+  });
+
+  // Find all rows with duplicates
+  emailMap.forEach((rows, email) => {
+    if (rows.length > 1) {
+      duplicatedRows.push(...rows);
     }
   });
 
-  if (duplicatedEmails.size > 0) {
+  if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `The duplicate email(s) are: ${Array.from(duplicatedEmails).join(", ")}`,
+      error: `Duplicate emails found in rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")}`,
     };
   }
   return { isValid: true };
 };
 
-
 export const validateDuplicatePhone = (
   processedData: ProcessedRowData[]
 ): ValidationResult => {
-  const phoneCount = new Map<string, number>();
-  const duplicatedPhones = new Set<string>();
+  const phoneMap = new Map<string, number[]>();
+  const duplicatedRows: number[] = [];
 
-  processedData.forEach((item) => {
+  processedData.forEach((item, index) => {
     // Skip empty phone numbers
     const phoneStr = item.Phone ? String(item.Phone) : "";
     if (!phoneStr || phoneStr.trim() === "") return;
     
-    const count = phoneCount.get(phoneStr) || 0;
-    phoneCount.set(phoneStr, count + 1);
-    if (count > 0) {
-      duplicatedPhones.add(phoneStr);
+    const rowNumber = index + 1; // +1 because first row is header
+    const existingRows = phoneMap.get(phoneStr) || [];
+    phoneMap.set(phoneStr, [...existingRows, rowNumber]);
+  });
+
+  // Find all rows with duplicates
+  phoneMap.forEach((rows, phone) => {
+    if (rows.length > 1) {
+      duplicatedRows.push(...rows);
     }
   });
 
-  if (duplicatedPhones.size > 0) {
+  if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `The duplicate phone number(s) are: ${Array.from(duplicatedPhones).join(", ")}`,
+      error: `Duplicate phone numbers found in rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")}`,
     };
   }
   return { isValid: true };
@@ -397,14 +406,19 @@ export const validateEmailNotExistInSystem = (
   processedData: ProcessedRowData[],
   existingUsers: Array<{ email: string }>
 ): ValidationResult => {
-  const duplicatedEmails = processedData.filter((item) =>
-    existingUsers.some((user) => user.email === item.Email)
-  );
-  if (duplicatedEmails.length > 0) {
-    const duplicateEmailList = duplicatedEmails.map(item => item.Email).join(", ");
+  const duplicatedRows: number[] = [];
+  
+  processedData.forEach((item, index) => {
+    const rowNumber = index + 1; // +1 because first row is header
+    if (existingUsers.some((user) => user.email === item.Email)) {
+      duplicatedRows.push(rowNumber);
+    }
+  });
+
+  if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `The following email(s) already exist in the system: ${duplicateEmailList}`,
+      error: `The following emails already exist in the system (rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")})`,
     };
   }
   return { isValid: true };
@@ -414,19 +428,24 @@ export const validatePhoneNotExistInSystem = (
   processedData: ProcessedRowData[],
   existingUsers: Array<{ metadata: unknown }>
 ): ValidationResult => {
-  const duplicatedPhones = processedData.filter((item) => {
-    if (!item.Phone) return false; // Skip if no phone number
-    return existingUsers.some((user) => {
+  const duplicatedRows: number[] = [];
+
+  processedData.forEach((item, index) => {
+    if (!item.Phone) return; // Skip if no phone number
+    
+    const rowNumber = index + 1; // +1 because first row is header
+    if (existingUsers.some((user) => {
       const metadata = user.metadata as Record<string, any>;
       return metadata?.phone === item.Phone;
-    });
+    })) {
+      duplicatedRows.push(rowNumber);
+    }
   });
 
-  if (duplicatedPhones.length > 0) {
-    const duplicatePhoneList = duplicatedPhones.map(item => item.Phone).join(", ");
+  if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `The following phone number(s) already exist in the system: ${duplicatePhoneList}`,
+      error: `The following phone numbers already exist in the system (rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")})`,
     };
   }
   return { isValid: true };

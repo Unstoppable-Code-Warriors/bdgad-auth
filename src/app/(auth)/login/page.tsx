@@ -13,8 +13,8 @@ export default function LoginPage() {
 					<Image
 						src="/undraw_working_n9u0.svg"
 						alt="Working illustration"
-						width={800}
-						height={800}
+						width={700}
+						height={700}
 					/>
 			</div>
 

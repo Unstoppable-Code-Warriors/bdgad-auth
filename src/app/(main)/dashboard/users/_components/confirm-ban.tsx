@@ -42,8 +42,8 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
           return "Reason can only contain letters (including Vietnamese), numbers, single spaces, periods (.), and commas (,)";
         }
         
-        if (trimmedValue.length > 200) {
-          return "Reason must be 200 characters or less";
+        if (trimmedValue.length > 200 || trimmedValue.length < 50) {
+          return "Reason must be 50 characters or more and 200 characters or less";
         }
         
         return null;

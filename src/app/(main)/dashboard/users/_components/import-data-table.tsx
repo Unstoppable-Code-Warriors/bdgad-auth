@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { createUsers, GetUsersResult } from "@/lib/actions/users";
 import { GetRolesResult } from "@/lib/actions/roles";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,6 +34,7 @@ import {
   validateRole,
   validateRoleExcel,
 } from "@/lib/utils/validate-data-excel";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ImportedUser {
   id: string;
@@ -58,7 +58,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [validationError, setValidationError] = useState<string[]>([]);
-  const [saveValidationErrors, setSaveValidationErrors] = useState<string[]>([]);
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -66,7 +65,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     try {
       setIsUploading(true);
       setValidationError([]);
-      setSaveValidationErrors([]); // Reset save validation errors
       // Read Excel file
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: "array" });
@@ -304,104 +302,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
   };
 
   const handleSave = async () => {
-    setSaveValidationErrors([]); // Clear previous errors
-    setValidationError([]); // Clear validation error
-    const errors: string[] = [];
-
-    // Check if there are any valid users to import
-    if (importedUsers.length === 0) {
-      errors.push("No valid users to import. Please ensure all required fields (Name, Email, Role) are filled correctly.");
-    }
-
-    const emptyRowsRequired = importedUsers.filter(user => 
-      !user.name.trim() ||
-      !user.email.trim() ||  
-      !user.roleId
-    );
-    if (emptyRowsRequired.length > 0) {
-      errors.push("Please fill in all required fields before importing");
-    }
-
-    // Check account limit
-    if (importedUsers.length > 50) {
-      errors.push("Cannot import more than 50 accounts at once");
-    }
-
-    // Check for duplicate emails within the import
-    const emailSet = new Set<string>();
-    const duplicateEmails = importedUsers.filter(user => {
-      const email = user.email.trim();
-      if (!email) return false; // Skip empty emails
-      if (emailSet.has(email)) {
-        return true;
-      }
-      emailSet.add(email);
-      return false;
-    });
-    if (duplicateEmails.length > 0) {
-      errors.push(`Duplicate emails found: ${duplicateEmails.map(u => u.email.trim()).join(", ")}`);
-    }
-
-    // Check if emails already exist in the system
-    const existingEmailSet = new Set<string>();
-    const existingEmails = importedUsers.filter(user => {
-      const email = user.email.trim();
-      if (!email) return false; // Skip empty emails
-      const exists = users.some(existingUser => existingUser.email === email);
-      if (exists && !existingEmailSet.has(email)) {
-        existingEmailSet.add(email);
-        return true;
-      }
-      return false;
-    });
-    if (existingEmails.length > 0) {
-      errors.push(`The following emails already exist in the system: ${Array.from(existingEmailSet).join(", ")}`);
-    }
-
-    // Check for duplicate phone numbers
-    const phoneSet = new Set<string>();
-    const duplicatePhones = importedUsers.filter(user => {
-      const phone = user.phone ? String(user.phone).trim() : "";
-      if (!phone) return false; // Skip empty phones
-      if (phoneSet.has(phone)) {
-        return true;
-      }
-      phoneSet.add(phone);
-      return false;
-    });
-    if (duplicatePhones.length > 0) {
-      errors.push(`Duplicate phone numbers found: ${duplicatePhones.map(u => u.phone ? String(u.phone).trim() : "").join(", ")}`);
-    }
-    
-
-    // Check if phone numbers already exist in the system
-    const existingPhoneSet = new Set<string>();
-    const existingPhones = importedUsers.filter(user => {
-      const phone = user.phone ? String(user.phone).trim() : "";
-      if (!phone) return false; // Skip empty phones
-      const exists = users.some(existingUser => {
-        const metadata = existingUser.metadata as Record<string, any>;
-        return metadata?.phone === phone;
-      });
-      if (exists && !existingPhoneSet.has(phone)) {
-        existingPhoneSet.add(phone);
-        return true;
-      }
-      return false;
-    });
-  
-    if (existingPhones.length > 0) {
-      errors.push(`The following phone numbers already exist in the system: ${Array.from(existingPhoneSet).join(", ")}`);
-    }
-
-    // If there are any validation errors, display them and return
-    if (errors.length > 0) {
-      setSaveValidationErrors(errors);
+    if (!handleCheck()) {
       return;
     }
-    setValidationError([]);
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       // Convert ImportedUser to RawUserData format
       const rawUsers = importedUsers.map(user => ({
         Name: user.name,
@@ -414,22 +319,20 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       // Convert to CreateUserInput format
       const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
 
-      await toast.promise(createUsers(convertedUsers), {
-        loading: "Creating users...",
-        success: `Successfully imported ${importedUsers.length} user(s)`,
-        error: (err) => {
-          if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
-            return "One or more email addresses already exist in the system. Please check your data and try again.";
-          }
-          return "Failed to create users. Please try again.";
-        },
-      });
-
-      await queryClient.invalidateQueries({ queryKey: ["users"] });
-      router.refresh();
-      setImportedUsers([]);
-      setValidationError([]);
-      setSaveValidationErrors([]);
+     await toast.promise(
+        createUsers(convertedUsers),
+        {
+          loading: "Creating users...",
+          error: (err) => {
+            if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
+              return "One or more email addresses already exist in the system. Please check your data and try again.";
+            }
+            return "Failed to create users. Please try again.";
+          },
+        }
+      )
+        router.push("/dashboard/users");
+        queryClient.invalidateQueries({ queryKey: ["users"] });
     } catch (error) {
       console.error("Error importing users:", error);
       toast.error("Failed to import users");
@@ -441,13 +344,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
   const handleCheck = () => {
     setValidationError([]); // Clear previous validation errors
     const errors: string[] = [];
-
-    // Check if there are any users to validate
-    if (importedUsers.length === 0) {
-      errors.push("No data to validate. Please import or add some rows first.");
-      setValidationError(errors);
-      return;
-    }
 
     // Check for empty required fields
     const emptyRowsRequired = importedUsers.filter(user => 
@@ -490,7 +386,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       }
     });
     if (existingEmailRows.length > 0) {
-      errors.push(`The following emails already exist in the system (rows: ${existingEmailRows.sort((a, b) => a - b).join(", ")})`);
+      errors.push(`The following emails already exist in rows: ${existingEmailRows.sort((a, b) => a - b).join(", ")}`);
     }
 
     // Check for duplicate phone numbers
@@ -522,78 +418,19 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       }
     });
     if (existingPhoneRows.length > 0) {
-      errors.push(`The following phone numbers already exist in the system (rows: ${existingPhoneRows.sort((a, b) => a - b).join(", ")})`);
+      errors.push(`The following phone numbers already exist in rows: ${existingPhoneRows.sort((a, b) => a - b).join(", ")}`);
     }
 
-    // Validate each row's data format
-    importedUsers.forEach((user, index) => {
-      const rowNumber = index + 1;
-      
-      // Name validation
-      if (user.name) {
-        const nameStr = user.name.trim();
-        if (nameStr.length < 3 || nameStr.length > 50) {
-          errors.push(`Row ${rowNumber}: Name must be between 3-50 characters`);
-        }
-        if (/\s{2,}/.test(nameStr)) {
-          errors.push(`Row ${rowNumber}: Name cannot contain multiple consecutive spaces`);
-        }
-        if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(nameStr)) {
-          errors.push(`Row ${rowNumber}: Name can only contain letters (including Vietnamese) and single spaces between words`);
-        }
-      }
-
-      // Email validation
-      if (user.email) {
-        const emailStr = user.email.trim();
-        if (!/^\S+@\S+$/.test(emailStr)) {
-          errors.push(`Row ${rowNumber}: Invalid email format`);
-        }
-      }
-
-      // Phone validation
-      if (user.phone) {
-        const phone = String(user.phone).trim();
-        if (!/^\d+$/.test(phone)) {
-          errors.push(`Row ${rowNumber}: Phone must contain only digits`);
-        }
-        if (phone.length !== 10) {
-          errors.push(`Row ${rowNumber}: Phone must be exactly 10 digits`);
-        }
-      }
-
-      // Address validation
-      if (user.address) {
-        const address = user.address.trim();
-        if (address.length > 200) {
-          errors.push(`Row ${rowNumber}: Address must be 200 characters or less`);
-        }
-        if (/\s{2,}/.test(address)) {
-          errors.push(`Row ${rowNumber}: Address cannot contain multiple consecutive spaces`);
-        }
-        if (!/^[a-zA-ZÀ-ỹ0-9\s,\.\/]+$/.test(address)) {
-          errors.push(`Row ${rowNumber}: Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: , . /`);
-        }
-      }
-
-      // Role validation
-      if (!user.roleId) {
-        errors.push(`Row ${rowNumber}: Role is required`);
-      } else {
-        const roleNum = Number(user.roleId);
-        if (isNaN(roleNum) || !Number.isInteger(roleNum) || roleNum < 1 || roleNum > 5) {
-          errors.push(`Row ${rowNumber}: Role must be a number between 1 and 5`);
-        }
-      }
-    });
-
     setValidationError(errors);
+    if (errors.length > 0) {
+       return false;
+    }
+    return true;
   };
 
   const handleClearTable = () => {
     setImportedUsers([]);
     setValidationError([]);
-    setSaveValidationErrors([]);
   };
 
   return (
@@ -622,20 +459,27 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         )}
       </div>
 
-      {(validationError.length > 0 || saveValidationErrors.length > 0) && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-2">
-          {validationError.map((error, index) => (
-            <p key={`validation-${index}`} className="text-sm text-red-600">
-              {error}
-            </p>
-          ))}
-          {saveValidationErrors.map((error, index) => (
-            <p key={`save-${index}`} className="text-sm text-red-600">
-              {error}
-            </p>
-          ))}
-        </div>
-      )}
+   {(validationError.length > 0 || importedUsers.length > 0) && (
+            <div className={`p-4 rounded-lg space-y-2 ${
+              validationError.length > 0
+                ? "bg-red-50 border border-red-200"
+                : "bg-green-50 border border-green-200"
+            }`}>
+              {validationError.length > 0  ? (
+                <>
+                  {validationError.map((error, index) => (
+                    <p key={`validation-${index}`} className="text-sm text-red-600">
+                      {error}
+                    </p>
+                  ))}
+                </>
+              ) : (
+                <p className="text-sm text-green-600">
+                  No exceptions detected. All data is valid.
+                </p>
+              )}
+            </div>
+          )}
 
       {importedUsers.length > 0 && (
         <div className="space-y-4">
@@ -716,8 +560,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                         />
                         {user.errors?.name && (
                           <div className="text-sm text-red-500 max-w-[300px]">
-                          <p className="whitespace-normal break-words">{user.errors.name}</p>
-                        </div>
+                            <p className="whitespace-normal break-words">{user.errors.name}</p>
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -820,6 +664,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               </TableBody>
             </Table>
           </div>
+
+       
         </div>
       )}
     </div>

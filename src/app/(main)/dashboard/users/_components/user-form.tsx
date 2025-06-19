@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { parsePhoneNumber } from "react-phone-number-input";
 
 interface UserFormProps {
   action: "create" | "update";
@@ -81,27 +83,30 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
       phone: (value: string) => {
         const trimmedValue = value.trim();
         if (!trimmedValue) return null; // Phone is optional
-        
-        // Check if phone contains only digits
-        if (!/^\d+$/.test(trimmedValue)) {
-          return "Phone number must contain only digits (0-9)";
-        }
-        
-        // Check if phone has exactly 10 digits
-        if (trimmedValue.length !== 10) {
-          return "Phone number must be exactly 10 digits";
+      
+        // Require country code prefix (starting with +)
+        if (!trimmedValue.startsWith('+')) {
+          return "Please enter a country code or select one from the country code dropdown.";
         }
 
+        // Validate against all valid international country codes using react-phone-number-input
+        try {
+          const phoneNumber = parsePhoneNumber(trimmedValue);
+          if (!phoneNumber || !phoneNumber.isValid()) {
+            return "Please enter a valid phone number with a valid country code. Length must be 10 digits (excluding country code) .";
+          }
+        } catch (error) {
+          return "Please enter a valid phone number with a valid country code. Length must be 10 digits (excluding country code) .";
+        }
+      
         // Check if phone already exists in the system
         const phoneExists = users.some(user => {
-          // Skip checking against the current user's phone number in update mode
           if (isUpdateMode && user.id === userData?.id) return false;
-          
           const metadata = user.metadata as UserMetadata;
           return metadata?.phone === trimmedValue;
         });
         if (phoneExists) return "Phone number already exists in the system";
-        
+      
         return null;
       },
       address: (value: string) => {
@@ -130,6 +135,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
 
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
+    console.log("values.phone",values.phone);
     try {
       const metadata: UserMetadata = {
         phone: values.phone.trim(),
@@ -218,10 +224,9 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
 
         <div className="grid gap-2">
           <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            {...form.getInputProps("phone")}
-            placeholder="0393270112"
+          <PhoneInput
+            onChange={(value) => form.setFieldValue("phone", value)}
+            value={form.values.phone}
           />
           {form.errors.phone && (
             <div className="text-sm text-red-600">{form.errors.phone}</div>
@@ -234,7 +239,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
             id="address"
             {...form.getInputProps("address")}
             placeholder="Enter address"
-            className="resize-none"
+            className="resize-none" 
           />
           {form.errors.address && (
             <div className="text-sm text-red-600">{form.errors.address}</div>

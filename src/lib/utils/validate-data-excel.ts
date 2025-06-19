@@ -1,7 +1,7 @@
 // utils/validate-data-excel.ts
 
 import * as XLSX from "xlsx";
-
+import * as RPNInput from "react-phone-number-input";
 // Types
 export type ValidationResult = {
   isValid: boolean;
@@ -436,6 +436,7 @@ export const validatePhoneNotExistInSystem = (
     const rowNumber = index + 1; // +1 because first row is header
     if (existingUsers.some((user) => {
       const metadata = user.metadata as Record<string, any>;
+      console.log("metadata?.phone A",metadata?.phone, "item.Phone A", item.Phone);
       return metadata?.phone === item.Phone;
     })) {
       duplicatedRows.push(rowNumber);
@@ -493,3 +494,39 @@ export const validateRoleExcel = (jsonData: any[]): ValidationResult => {
 
   return { isValid: true };
 };
+
+export const normalizePhoneForInput = (phone: string | undefined): any => {
+  if (!phone) return "";
+  
+  const trimmed = phone.trim();
+  if (!trimmed) return "";
+  
+  const match = trimmed.match(/^\+(\d{1,3})(0)(\d+)$/);
+  if (match) {
+    const [, countryCode, , rest] = match;
+    return `+${countryCode}${rest}`;
+  }
+
+
+  // If already in E.164 format, return as is
+  if (trimmed.startsWith('+')) {
+    return trimmed;
+  }
+  
+  if (trimmed.startsWith('0') && trimmed.length === 10 && /^\d{10}$/.test(trimmed)) {
+    return `+${trimmed.substring(1)}`;
+  }
+
+  // For other formats, try to parse as is or return empty to avoid errors
+  try {
+    const parsed = RPNInput.parsePhoneNumber(trimmed);
+    if (parsed && parsed.isValid()) {
+      return parsed.number;
+    }
+  } catch (error) {
+    // If parsing fails, return empty string to avoid E.164 error
+    console.warn('Phone number format not recognized:', trimmed);
+    return trimmed;
+  }
+
+}

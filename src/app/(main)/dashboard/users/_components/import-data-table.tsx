@@ -33,8 +33,11 @@ import {
   validatePhoneNotExistInSystem,
   validateRole,
   validateRoleExcel,
+  normalizePhoneForInput,
 } from "@/lib/utils/validate-data-excel";
 import { useQueryClient } from "@tanstack/react-query";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { parsePhoneNumber } from "react-phone-number-input";
 
 interface ImportedUser {
   id: string;
@@ -98,14 +101,10 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         setValidationError(prev => [...prev, roleValidation.error!]);
       }
 
-
-      console.log("jsonData",jsonData);
       
       // Process and validate data
       const { processedData } = processExcelData(jsonData);
 
-
-      console.log("processedData",processedData);
       // Validate account limit
       const accountLimitValidation = validateAccountLimit(processedData);
       if (!accountLimitValidation.isValid) {
@@ -148,13 +147,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
           id: `temp-${index}`,
           name: row.Name || "",
           email: row.Email || "",
-          phone: row.Phone || "",
+          phone: normalizePhoneForInput(row.Phone) || "",
           address: row.Address || "",
           roleId: parseInt(row.Role) || 0,
           errors: validateRow(row, index + 1),
         }));
-
-        console.log("convertedUsers",convertedUsers);
 
         setImportedUsers(convertedUsers);
   
@@ -220,10 +217,19 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Phone validation (optional)
     if (row.Phone) {
       const phone = String(row.Phone).trim();
-      if (!/^\d+$/.test(phone)) {
-        errors.phone = "Phone must contain only digits";
-      } else if (phone.length !== 10) {
-        errors.phone = "Phone must be exactly 10 digits";
+     
+      if (!phone.startsWith('+')) {
+        errors.phone = "Please enter a country code or select one from the country code dropdown.";
+      }
+
+      // Validate against all valid international country codes using react-phone-number-input
+      try {
+        const phoneNumber = parsePhoneNumber(phone);
+        if (!phoneNumber || !phoneNumber.isValid()) {
+          errors.phone = "Please enter a valid phone number with a valid country code.";
+        }
+      } catch (error) {
+        errors.phone = "Please enter a valid phone number with a valid country code.";
       }
     }
 
@@ -319,24 +325,14 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       // Convert to CreateUserInput format
       const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
 
-     await toast.promise(
-        createUsers(convertedUsers),
-        {
-          loading: "Creating users...",
-          error: (err) => {
-            if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
-              return "One or more email addresses already exist in the system. Please check your data and try again.";
-            }
-            return "Failed to create users. Please try again.";
-          },
-        }
-      )
-        router.push("/dashboard/users");
-        queryClient.invalidateQueries({ queryKey: ["users"] });
+      await createUsers(convertedUsers);
     } catch (error) {
       console.error("Error importing users:", error);
-      toast.error("Failed to import users");
+      toast.error("Failed to create users");
     } finally {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      router.push("/dashboard/users");
+      toast.success("Users created successfully");
       setIsLoading(false);
     }
   };
@@ -358,6 +354,27 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Check account limit
     if (importedUsers.length > 50) {
       errors.push("Cannot import more than 50 accounts at once");
+    }
+
+    // Check for row-level validation errors
+    const rowsWithErrors: number[] = [];
+    importedUsers.forEach((user, index) => {
+      const row = {
+        Name: user.name,
+        Email: user.email,
+        Phone: user.phone,
+        Address: user.address,
+        Role: user.roleId,
+      };
+      const rowErrors = validateRow(row, index + 1);
+      if (rowErrors && Object.keys(rowErrors).length > 0) {
+        rowsWithErrors.push(index + 1);
+      }
+    });
+    if (rowsWithErrors.length > 0) {
+      rowsWithErrors.forEach(rowNumber => {
+        errors.push(`Row ${rowNumber}: Please fix the errors in this row.`);
+      });
     }
 
     // Check for duplicate emails within the import
@@ -410,8 +427,10 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     importedUsers.forEach((user, index) => {
       const phone = user.phone ? String(user.phone).trim() : "";
       if (!phone) return; // Skip empty phones
+      console.log("users", users);
       if (users.some(existingUser => {
         const metadata = existingUser.metadata as Record<string, any>;
+        console.log("metadata?.phone",metadata?.phone, "phone", phone);
         return metadata?.phone === phone;
       })) {
         existingPhoneRows.push(index + 1);
@@ -459,13 +478,9 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         )}
       </div>
 
-   {(validationError.length > 0 || importedUsers.length > 0) && (
-            <div className={`p-4 rounded-lg space-y-2 ${
-              validationError.length > 0
-                ? "bg-red-50 border border-red-200"
-                : "bg-green-50 border border-green-200"
-            }`}>
-              {validationError.length > 0  ? (
+   {(validationError.length > 0) && (
+            <div className="p-4 rounded-lg space-y-2 bg-red-50 border border-red-200">
+              {validationError.length > 0  && (
                 <>
                   {validationError.map((error, index) => (
                     <p key={`validation-${index}`} className="text-sm text-red-600">
@@ -473,10 +488,6 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                     </p>
                   ))}
                 </>
-              ) : (
-                <p className="text-sm text-green-600">
-                  No exceptions detected. All data is valid.
-                </p>
               )}
             </div>
           )}
@@ -498,7 +509,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleCheck}
+                onClick={() => {
+                  if (handleCheck()) {
+                    toast.success("All data is valid");
+                  }
+                }}
                 disabled={isLoading}
               >
                 <Check className="h-4 w-4 mr-2" />
@@ -584,10 +599,10 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <Input
+                        <PhoneInput
                           value={user.phone}
-                          onChange={(e) =>
-                            handleCellChange(user.id, "phone", e.target.value)
+                          onChange={(value) =>
+                            handleCellChange(user.id, "phone", value)
                           }
                           className={user.errors?.phone ? "border-red-500" : ""}
                           disabled={isLoading}

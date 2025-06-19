@@ -12,6 +12,7 @@ import {
   sendRoleChangeEmail,
   sendDeletionEmail,
 } from "@/lib/utils/email";
+import { parsePhoneNumber } from "libphonenumber-js";
 
 // Define the type for user with roles
 type UserWithRoles = Omit<typeof users.$inferSelect, "password"> & {
@@ -184,9 +185,10 @@ const validateName = (name: string): void => {
 
 const validatePhone = (phone: string | undefined): void => {
   if (!phone) return; // Phone is optional
-  console.log("Validating phone:", phone);
-  if (!/^\d{10}$/.test(phone)) {
-    throw new Error("Phone must be exactly 10 digits");
+
+  const phoneNumber = parsePhoneNumber(phone);
+  if (!phoneNumber) {
+    throw new Error("Invalid phone number");
   }
 };
 
@@ -418,7 +420,10 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
             email,
             password: hashedPassword,
             name,
-            metadata,
+            metadata:{
+              phone: metadata?.phone || "",
+              address: metadata?.address || "",
+            },
             status,
           })
           .returning();

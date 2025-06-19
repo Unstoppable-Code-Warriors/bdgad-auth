@@ -427,10 +427,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     importedUsers.forEach((user, index) => {
       const phone = user.phone ? String(user.phone).trim() : "";
       if (!phone) return; // Skip empty phones
-      console.log("users", users);
       if (users.some(existingUser => {
         const metadata = existingUser.metadata as Record<string, any>;
-        console.log("metadata?.phone",metadata?.phone, "phone", phone);
         return metadata?.phone === phone;
       })) {
         existingPhoneRows.push(index + 1);

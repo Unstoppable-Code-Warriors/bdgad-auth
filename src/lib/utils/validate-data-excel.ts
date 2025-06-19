@@ -436,7 +436,6 @@ export const validatePhoneNotExistInSystem = (
     const rowNumber = index + 1; // +1 because first row is header
     if (existingUsers.some((user) => {
       const metadata = user.metadata as Record<string, any>;
-      console.log("metadata?.phone A",metadata?.phone, "item.Phone A", item.Phone);
       return metadata?.phone === item.Phone;
     })) {
       duplicatedRows.push(rowNumber);
@@ -498,7 +497,7 @@ export const validateRoleExcel = (jsonData: any[]): ValidationResult => {
 export const normalizePhoneForInput = (phone: string | undefined): any => {
   if (!phone) return "";
   
-  const trimmed = phone.trim();
+  const trimmed = phone.replace(/\s+/g, '').trim();
   if (!trimmed) return "";
   
   const match = trimmed.match(/^\+(\d{1,3})(0)(\d+)$/);

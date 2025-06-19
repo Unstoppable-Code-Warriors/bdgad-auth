@@ -29,8 +29,6 @@ export default function ImportUsersPage() {
     refetchOnWindowFocus: false,
   });
 
-
-console.log("usersData", usersData);
   const { data: rolesData, isLoading: isLoadingRoles, error: rolesError } = useQuery({
     queryKey: ["roles"],
     queryFn: () => getRoles(),

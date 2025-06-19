@@ -67,49 +67,41 @@ Best regards`,
 export const sendPasswordEmailsToUsers = async (
   userResults: Array<{
     user: { email: string; name: string };
-    generatedPassword: string;
-  }>
+    token: string;
+  }>,
+  redirectUrl: string
 ) => {
   try {
     const transporter = createTransporter();
 
     // Create array of email promises
-    const emailPromises = userResults.map(({ user, generatedPassword }) => {
+    const emailPromises = userResults.map(({ user, token }) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: user.email,
-        subject: "Your Account Password - Welcome!",
+        subject: "Welcome to BDGAD - Set Your Password",
         html: `
-					<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-						<h2 style="color: #333;">Welcome to BDGAD!</h2>
-						<p>Hello ${user.name},</p>
-						<p>Your account has been created successfully. Here are your login credentials:</p>
-						
-						<div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-							<p><strong>Email:</strong> ${user.email}</p>
-							<p><strong>Password:</strong> <code style="background-color: #e1e1e1; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${generatedPassword}</code></p>
-						</div>
-						
-						<p style="color: #666; font-size: 14px;">
-							<strong>Important:</strong> For security reasons, please change your password after your first login.
-						</p>
-						
-						<p>Best regards</p>
-					</div>
-				`,
-        text: `Welcome to BDGAD!
-
-Hello ${user.name},
-
-Your account has been created successfully. Here are your login credentials:
-
-Email: ${user.email}
-Password: ${generatedPassword}
-
-Important: For security reasons, please change your password after your first login.
-
-Best regards`,
-      };
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Welcome to BDGAD!</h2>
+            <p>Hello ${user.name},</p>
+            <p>An account has been created for you in the BDGAD system. To activate your account, please set your password by clicking the button below:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${redirectUrl}/new-password?token=${token}" 
+                 style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                Set Your Password
+              </a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #666;">${redirectUrl}/new-password?token=${token}</p>
+            <p><strong>This link will expire in 1 hour.</strong></p>
+            <p>If you were not expecting this email, you can safely ignore it.</p>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            <p style="color: #666; font-size: 12px;">
+              This is an automated message from the BDGAD Auth Service. Please do not reply to this email.
+            </p>
+          </div>
+        `,
+      }
 
       return transporter.sendMail(mailOptions);
     });
@@ -118,12 +110,12 @@ Best regards`,
     await Promise.all(emailPromises);
 
     console.log(
-      `Password emails sent successfully to ${userResults.length} users`
+      `Redirect to set password emails sent successfully to ${userResults.length} users`
     );
     return true;
   } catch (error) {
-    console.error("Error sending password emails:", error);
-    throw new Error("Failed to send password emails");
+    console.error("Error sending redirect to set password emails:", error);
+    throw new Error("Failed to send redirect to set password emails");
   }
 };
 

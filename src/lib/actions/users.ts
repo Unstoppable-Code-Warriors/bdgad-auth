@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db/drizzle";
-import { users, userRoles, roles } from "@/db/schema";
+import { users, userRoles, roles, passwordResetTokens } from "@/db/schema";
 import { count, eq, getTableColumns, or, ilike, inArray, and, not, sql, desc } from "drizzle-orm";
 import { withAuth } from "@/lib/utils/auth";
 import bcrypt from "bcryptjs";
@@ -13,6 +13,8 @@ import {
   sendDeletionEmail,
 } from "@/lib/utils/email";
 import { parsePhoneNumber } from "libphonenumber-js";
+import crypto from "crypto";
+import { sendNewPasswordEmail } from "@/backend/utils/emailService";
 
 // Define the type for user with roles
 type UserWithRoles = Omit<typeof users.$inferSelect, "password"> & {
@@ -35,7 +37,7 @@ export type CreateUserInput = {
 // Type for user creation result with password
 type UserCreationResult = {
   user: Omit<typeof users.$inferSelect, "password">;
-  generatedPassword: string;
+  token: string;
 };
 
 async function getUsersCore({
@@ -332,14 +334,24 @@ async function createUserCore({
         );
       }
 
-      // TODO: Send email with generated password to user
-      // This would require an email service to be implemented
+      // Generate secure random token
+		const resetToken = crypto.randomBytes(32).toString("hex")
+		const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+
+    console.log("new id user:", newUser.id);
+		// Store reset token in database
+		await tx.insert(passwordResetTokens).values({
+			userId: newUser.id,
+			token: resetToken,
+			expiresAt,
+			used: "false",
+		})
+    const redirectUrl = "https://bdgad.bio/auth"
+
       try {
-        await sendPasswordEmail(email, generatedPassword, name);
+        await sendNewPasswordEmail(redirectUrl, newUser.email, resetToken, newUser.name);
       } catch (emailError) {
-        console.error("Failed to send password email:", emailError);
-        // Don't throw here - user creation was successful, just email failed
-        // The frontend will handle this case with appropriate messaging
+        console.error("Failed to send new password email:", emailError);
       }
 
       return newUser;
@@ -403,6 +415,7 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
     };
 
     const results: UserCreationResult[] = [];
+    const redirectUrl = "https://bdgad.bio/auth"
 
     // Process each user in a transaction
     const finalResults = await db.transaction(async (tx) => {
@@ -428,6 +441,18 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
           })
           .returning();
 
+        // Generate secure random token
+		const resetToken = crypto.randomBytes(32).toString("hex")
+		const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+
+		// Store reset token in database
+		await tx.insert(passwordResetTokens).values({
+          userId: newUser.id,
+          token: resetToken,
+          expiresAt,
+          used: "false",
+        })
+
         // Assign roles if provided
         if (roleIds.length > 0) {
           await tx.insert(userRoles).values(
@@ -440,7 +465,7 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
 
         results.push({
           user: newUser,
-          generatedPassword,
+          token: resetToken,
         });
       }
 
@@ -449,9 +474,9 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
 
     // Send emails to all created users
     try {
-      await sendPasswordEmailsToUsers(finalResults);
+      await sendPasswordEmailsToUsers(finalResults, redirectUrl);
     } catch (emailError) {
-      console.error("Failed to send password emails:", emailError);
+      console.error("Failed to send redirect to set password emails:", emailError);
       // Don't throw here - user creation was successful, just email failed
     }
 

@@ -1,7 +1,6 @@
 // utils/validate-data-excel.ts
 
 import * as XLSX from "xlsx";
-import * as RPNInput from "react-phone-number-input";
 // Types
 export type ValidationResult = {
   isValid: boolean;
@@ -493,41 +492,3 @@ export const validateRoleExcel = (jsonData: any[]): ValidationResult => {
 
   return { isValid: true };
 };
-
-export const normalizePhoneForInput = (phone: string | number | undefined): string => {
-  if (typeof phone === 'number') {
-    phone = phone.toString();
-  }
-  if (!phone) return "";
-  
-  const trimmed = phone.replace(/\s+/g, '').trim();
-  if (!trimmed) return "";
-  
-  // If already in E.164 format, validate and return
-  if (trimmed.startsWith('+')) {
-    try {
-      const parsed = RPNInput.parsePhoneNumber(trimmed);
-      if (parsed && parsed.isValid()) {
-        return parsed.number;
-      }
-    } catch (error) {
-      console.warn('Invalid E.164 phone number:', trimmed);
-    }
-    // If E.164 format but invalid, return as-is for user to fix
-    return trimmed;
-  }
-  
-  // Try to parse as international number
-  try {
-    const parsed = RPNInput.parsePhoneNumber(trimmed);
-    if (parsed && parsed.isValid()) {
-      return parsed.number;
-    }
-  } catch (error) {
-    // If parsing fails, log and continue
-    console.warn('Phone number format not recognized:', trimmed);
-  }
-
-  // Return the original trimmed number so users can see it and add country code
-  return trimmed;
-}

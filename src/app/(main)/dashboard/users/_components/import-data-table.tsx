@@ -36,8 +36,6 @@ import {
   normalizePhoneForInput,
 } from "@/lib/utils/validate-data-excel";
 import { useQueryClient } from "@tanstack/react-query";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { parsePhoneNumber } from "react-phone-number-input";
 
 interface ImportedUser {
   id: string;
@@ -81,7 +79,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
 
       const worksheet = workbook.Sheets["table"];
       const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
-
+      console.log("jsonData",jsonData);
       // Validate data is not empty
       const dataValidation = validateDataNotEmpty(jsonData);
       if (!dataValidation.isValid) {
@@ -105,6 +103,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       // Process and validate data
       const { processedData } = processExcelData(jsonData);
 
+      console.log("processedData",processedData);
       // Validate account limit
       const accountLimitValidation = validateAccountLimit(processedData);
       if (!accountLimitValidation.isValid) {
@@ -153,6 +152,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
           errors: validateRow(row, index + 1),
         }));
 
+        console.log("convertedUsers",convertedUsers);
         setImportedUsers(convertedUsers);
   
     } catch (error) {
@@ -219,18 +219,14 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       const phone = String(row.Phone).trim();
      
       if (!phone.startsWith('+')) {
-        errors.phone = "Please enter a country code or select one from the country code dropdown.";
-      }
-
-      // Validate against all valid international country codes using react-phone-number-input
-      try {
-        const phoneNumber = parsePhoneNumber(phone);
-        if (!phoneNumber || !phoneNumber.isValid()) {
-          errors.phone = "Please enter a valid phone number with a valid country code.";
-        }
-      } catch (error) {
-        errors.phone = "Please enter a valid phone number with a valid country code.";
-      }
+        errors.phone = "Please enter a country code starting with +";
+      } else if (phone.length < 12 || phone.length > 13) {
+        errors.phone = "Phone number must be between 12-13 characters including country code";
+      }else if (/\s/.test(phone)) {
+        errors.phone = "Phone number cannot contain spaces";
+      }else if (!/^\+\d+$/.test(phone)) {
+        errors.phone = "Phone number can only contain + and digits";
+      } 
     }
 
     // Address validation (optional)
@@ -597,10 +593,10 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <PhoneInput
+                        <Input
                           value={user.phone}
-                          onChange={(value) =>
-                            handleCellChange(user.id, "phone", value)
+                          onChange={(e) =>
+                            handleCellChange(user.id, "phone", e.target.value)
                           }
                           className={user.errors?.phone ? "border-red-500" : ""}
                           disabled={isLoading}

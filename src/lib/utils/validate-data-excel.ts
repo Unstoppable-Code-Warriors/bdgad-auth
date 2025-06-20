@@ -494,38 +494,40 @@ export const validateRoleExcel = (jsonData: any[]): ValidationResult => {
   return { isValid: true };
 };
 
-export const normalizePhoneForInput = (phone: string | undefined): any => {
+export const normalizePhoneForInput = (phone: string | number | undefined): string => {
+  if (typeof phone === 'number') {
+    phone = phone.toString();
+  }
   if (!phone) return "";
   
   const trimmed = phone.replace(/\s+/g, '').trim();
   if (!trimmed) return "";
   
-  const match = trimmed.match(/^\+(\d{1,3})(0)(\d+)$/);
-  if (match) {
-    const [, countryCode, , rest] = match;
-    return `+${countryCode}${rest}`;
-  }
-
-
-  // If already in E.164 format, return as is
+  // If already in E.164 format, validate and return
   if (trimmed.startsWith('+')) {
+    try {
+      const parsed = RPNInput.parsePhoneNumber(trimmed);
+      if (parsed && parsed.isValid()) {
+        return parsed.number;
+      }
+    } catch (error) {
+      console.warn('Invalid E.164 phone number:', trimmed);
+    }
+    // If E.164 format but invalid, return as-is for user to fix
     return trimmed;
   }
   
-  if (trimmed.startsWith('0') && trimmed.length === 10 && /^\d{10}$/.test(trimmed)) {
-    return `+${trimmed.substring(1)}`;
-  }
-
-  // For other formats, try to parse as is or return empty to avoid errors
+  // Try to parse as international number
   try {
     const parsed = RPNInput.parsePhoneNumber(trimmed);
     if (parsed && parsed.isValid()) {
       return parsed.number;
     }
   } catch (error) {
-    // If parsing fails, return empty string to avoid E.164 error
+    // If parsing fails, log and continue
     console.warn('Phone number format not recognized:', trimmed);
-    return trimmed;
   }
 
+  // Return the original trimmed number so users can see it and add country code
+  return trimmed;
 }

@@ -4,6 +4,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "./app-sidebar"
+import { NavUser } from "./nav-user"
 import { Session } from "next-auth"
 import { pathTitles } from "@/lib/constants"
 import { usePathname } from "next/navigation"
@@ -22,7 +23,7 @@ const DashboardLayoutClient = ({
 		<SidebarProvider>
 			<AppSidebar session={session} />
 			<SidebarInset>
-				<header className="flex h-16 shrink-0 items-center gap-2">
+				<header className="flex h-16 shrink-0 items-center gap-2 justify-between">
 					<div className="flex items-center gap-2 px-4">
 						<SidebarTrigger className="-ml-1 cursor-pointer" />
 						{/* <Separator
@@ -44,6 +45,9 @@ const DashboardLayoutClient = ({
 								</BreadcrumbItem>
 							</BreadcrumbList>
 						</Breadcrumb> */}
+					</div>
+					<div className="px-4">
+						<NavUser session={session} />
 					</div>
 				</header>
 				<section className="flex flex-col px-4 grow">

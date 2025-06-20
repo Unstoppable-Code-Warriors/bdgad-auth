@@ -20,8 +20,6 @@ import {
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { PhoneInput } from "@/components/ui/phone-input";
-import { parsePhoneNumber } from "react-phone-number-input";
 
 interface UserFormProps {
   action: "create" | "update";
@@ -86,17 +84,20 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
       
         // Require country code prefix (starting with +)
         if (!trimmedValue.startsWith('+')) {
-          return "Please enter a country code or select one from the country code dropdown.";
+          return "Please enter a country code starting with +";
         }
 
-        // Validate against all valid international country codes using react-phone-number-input
-        try {
-          const phoneNumber = parsePhoneNumber(trimmedValue);
-          if (!phoneNumber || !phoneNumber.isValid()) {
-            return "Please enter a valid phone number with a valid country code. Length must be 10 digits (excluding country code) .";
-          }
-        } catch (error) {
-          return "Please enter a valid phone number with a valid country code. Length must be 10 digits (excluding country code) .";
+        // Basic phone number validation
+        if (trimmedValue.length < 12 || trimmedValue.length > 13) {
+          return "Phone number must be between 12-13 characters including country code";
+        }
+
+        if (!/^\+\d+$/.test(trimmedValue)) {
+          return "Phone number can only contain + and digits";
+        }
+
+        if (/\s/.test(trimmedValue)) {
+          return "Phone number cannot contain spaces";
         }
       
         // Check if phone already exists in the system
@@ -224,8 +225,8 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
 
         <div className="grid gap-2">
           <Label htmlFor="phone">Phone</Label>
-          <PhoneInput
-            onChange={(value) => form.setFieldValue("phone", value)}
+          <Input
+            onChange={(e) => form.setFieldValue("phone", e.target.value)}
             value={form.values.phone}
           />
           {form.errors.phone && (

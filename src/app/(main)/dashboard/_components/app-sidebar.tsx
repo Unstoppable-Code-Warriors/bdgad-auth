@@ -3,7 +3,6 @@
 import { Dna, Settings2, UserRoundCheck, Users } from "lucide-react"
 
 import { NavItems } from "./nav-items"
-import { NavUser } from "./nav-user"
 import {
 	Sidebar,
 	SidebarContent,
@@ -64,9 +63,6 @@ export function AppSidebar({
 			<SidebarContent>
 				<NavItems items={navItems} />
 			</SidebarContent>
-			<SidebarFooter>
-				<NavUser session={session} />
-			</SidebarFooter>
 		</Sidebar>
 	)
 }

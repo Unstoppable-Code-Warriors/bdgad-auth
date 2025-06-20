@@ -31,9 +31,7 @@ import {
   validateDuplicateEmail,
   validateDuplicatePhone,
   validatePhoneNotExistInSystem,
-  validateRole,
   validateRoleExcel,
-  normalizePhoneForInput,
 } from "@/lib/utils/validate-data-excel";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -146,7 +144,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
           id: `temp-${index}`,
           name: row.Name || "",
           email: row.Email || "",
-          phone: normalizePhoneForInput(row.Phone) || "",
+          phone: row.Phone || "",
           address: row.Address || "",
           roleId: parseInt(row.Role) || 0,
           errors: validateRow(row, index + 1),

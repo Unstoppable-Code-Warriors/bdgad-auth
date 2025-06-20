@@ -94,10 +94,7 @@ async function getUsersCore({
       const usersWithRoles = search
         ? await baseQuery
             .where(
-              or(
-                ilike(users.name, `%${search}%`),
-                ilike(users.email, `%${search}%`)
-              )
+              ilike(users.email, `%${search}%`)
             )
             .limit(limit)
             .offset(offset)
@@ -134,10 +131,7 @@ async function getUsersCore({
             .select({ count: count() })
             .from(users)
             .where(
-              or(
-                ilike(users.name, `%${search}%`),
-                ilike(users.email, `%${search}%`)
-              )
+              ilike(users.email, `%${search}%`)
             )
         : await tx.select({ count: count() }).from(users);
 

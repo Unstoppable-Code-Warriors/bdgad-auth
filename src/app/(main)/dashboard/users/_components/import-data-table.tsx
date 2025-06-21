@@ -17,7 +17,13 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createUsers, GetUsersResult } from "@/lib/actions/users";
 import { GetRolesResult } from "@/lib/actions/roles";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader, Plus, Trash2, Upload, Check } from "lucide-react";
 import * as XLSX from "xlsx";
 import convertRawUsersToCreateUserInput from "@/lib/utils/convert-data";
@@ -71,53 +77,58 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       // Validate worksheet exists
       const worksheetValidation = validateWorksheetExists(workbook, "table");
       if (!worksheetValidation.isValid) {
-        setValidationError(prev => [...prev, worksheetValidation.error!]);
+        setValidationError((prev) => [...prev, worksheetValidation.error!]);
         return;
       }
 
       const worksheet = workbook.Sheets["table"];
       const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
-      console.log("jsonData",jsonData);
+      console.log("jsonData", jsonData);
       // Validate data is not empty
       const dataValidation = validateDataNotEmpty(jsonData);
       if (!dataValidation.isValid) {
-        setValidationError(prev => [...prev, dataValidation.error!]);
+        setValidationError((prev) => [...prev, dataValidation.error!]);
         return;
       }
 
       // Validate columns
       const columnValidation = validateColumns(worksheet);
       if (!columnValidation.isValid) {
-        setValidationError(prev => [...prev, columnValidation.error!]);
+        setValidationError((prev) => [...prev, columnValidation.error!]);
       }
 
       // Validate role
       const roleValidation = validateRoleExcel(jsonData);
       if (!roleValidation.isValid) {
-        setValidationError(prev => [...prev, roleValidation.error!]);
+        setValidationError((prev) => [...prev, roleValidation.error!]);
       }
 
-      
       // Process and validate data
       const { processedData } = processExcelData(jsonData);
 
-      console.log("processedData",processedData);
+      console.log("processedData", processedData);
       // Validate account limit
       const accountLimitValidation = validateAccountLimit(processedData);
       if (!accountLimitValidation.isValid) {
-        setValidationError(prev => [...prev, accountLimitValidation.error!]);
+        setValidationError((prev) => [...prev, accountLimitValidation.error!]);
       }
 
       // Validate duplicate emails
       const duplicateEmailValidation = validateDuplicateEmail(processedData);
       if (!duplicateEmailValidation.isValid) {
-        setValidationError(prev => [...prev, duplicateEmailValidation.error!]);
+        setValidationError((prev) => [
+          ...prev,
+          duplicateEmailValidation.error!,
+        ]);
       }
 
       // Validate duplicate phones
       const duplicatePhoneValidation = validateDuplicatePhone(processedData);
       if (!duplicatePhoneValidation.isValid) {
-        setValidationError(prev => [...prev, duplicatePhoneValidation.error!]);
+        setValidationError((prev) => [
+          ...prev,
+          duplicatePhoneValidation.error!,
+        ]);
       }
 
       // Validate emails don't exist in system
@@ -126,7 +137,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         users
       );
       if (!emailExistsValidation.isValid) {
-        setValidationError(prev => [...prev, emailExistsValidation.error!]);
+        setValidationError((prev) => [...prev, emailExistsValidation.error!]);
       }
 
       // Validate phones don't exist in system
@@ -135,12 +146,12 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         users
       );
       if (!phoneExistsValidation.isValid) {
-        setValidationError(prev => [...prev, phoneExistsValidation.error!]);
+        setValidationError((prev) => [...prev, phoneExistsValidation.error!]);
       }
 
-
-        // Convert to ImportedUser format for table display
-        const convertedUsers: ImportedUser[] = processedData.map((row: any, index: number) => ({
+      // Convert to ImportedUser format for table display
+      const convertedUsers: ImportedUser[] = processedData.map(
+        (row: any, index: number) => ({
           id: `temp-${index}`,
           name: row.Name || "",
           email: row.Email || "",
@@ -148,29 +159,37 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
           address: row.Address || "",
           roleId: parseInt(row.Role) || 0,
           errors: validateRow(row, index + 1),
-        }));
+        })
+      );
 
-        console.log("convertedUsers",convertedUsers);
-        setImportedUsers(convertedUsers);
-  
+      console.log("convertedUsers", convertedUsers);
+      setImportedUsers(convertedUsers);
     } catch (error) {
       console.error("Error processing Excel file:", error);
-      setValidationError(prev => [...prev, "Failed to process Excel file. Please check the file format."]);
+      setValidationError((prev) => [
+        ...prev,
+        "Failed to process Excel file. Please check the file format.",
+      ]);
     } finally {
       setIsUploading(false);
     }
   };
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-    processExcelFile(file);
-  }, [users]);
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const file = acceptedFiles[0];
+      if (!file) return;
+      processExcelFile(file);
+    },
+    [users]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+        ".xlsx",
+      ],
       "application/vnd.ms-excel": [".xls"],
     },
     maxFiles: 1,
@@ -178,7 +197,9 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
 
   const validateRow = (row: any, rowIndex: number) => {
     const errors: { [key: string]: string } = {};
-    const hasAnyData = Object.values(row).some(value => value && String(value).trim() !== "");
+    const hasAnyData = Object.values(row).some(
+      (value) => value && String(value).trim() !== ""
+    );
 
     // Only validate if there's any data in the row
     if (!hasAnyData) {
@@ -200,7 +221,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       }
       // Allow only letters (including Vietnamese) and single spaces
       if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
-        errors.name = "Name can only contain letters (including Vietnamese) and single spaces between words";
+        errors.name =
+          "Name can only contain letters (including Vietnamese) and single spaces between words";
       }
     }
 
@@ -215,16 +237,17 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Phone validation (optional)
     if (row.Phone) {
       const phone = String(row.Phone).trim();
-     
-      if (!phone.startsWith('+')) {
+
+      if (!phone.startsWith("+")) {
         errors.phone = "Please enter a country code starting with +";
       } else if (phone.length < 12 || phone.length > 13) {
-        errors.phone = "Phone number must be between 12-13 characters including country code";
-      }else if (/\s/.test(phone)) {
+        errors.phone =
+          "Phone number must be between 12-13 characters including country code";
+      } else if (/\s/.test(phone)) {
         errors.phone = "Phone number cannot contain spaces";
-      }else if (!/^\+\d+$/.test(phone)) {
+      } else if (!/^\+\d+$/.test(phone)) {
         errors.phone = "Phone number can only contain + and digits";
-      } 
+      }
     }
 
     // Address validation (optional)
@@ -239,7 +262,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       }
       // Check for allowed characters
       if (!/^[a-zA-ZÀ-ỹ0-9\s,\.\/]+$/.test(address)) {
-        errors.address = "Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: , . /";
+        errors.address =
+          "Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: , . /";
       }
     }
 
@@ -258,26 +282,30 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     return Object.keys(errors).length > 0 ? errors : undefined;
   };
 
-  const handleCellChange = (userId: string, field: string, value: string | number) => {
+  const handleCellChange = (
+    userId: string,
+    field: string,
+    value: string | number
+  ) => {
     setImportedUsers((prevUsers) =>
       prevUsers.map((user) => {
         if (user.id === userId) {
           // Create a row object with the correct capitalized field names
           const row = {
-            Name: field === 'name' ? value : user.name,
-            Email: field === 'email' ? value : user.email,
-            Phone: field === 'phone' ? value : user.phone,
-            Address: field === 'address' ? value : user.address,
-            Role: field === 'roleId' ? value : user.roleId,
+            Name: field === "name" ? value : user.name,
+            Email: field === "email" ? value : user.email,
+            Phone: field === "phone" ? value : user.phone,
+            Address: field === "address" ? value : user.address,
+            Role: field === "roleId" ? value : user.roleId,
           };
-          
+
           // Validate the entire row
           const errors = validateRow(row, 0);
-          
-          return { 
-            ...user, 
-            [field]: value, 
-            errors: errors
+
+          return {
+            ...user,
+            [field]: value,
+            errors: errors,
           };
         }
         return user;
@@ -308,7 +336,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     try {
       setIsLoading(true);
       // Convert ImportedUser to RawUserData format
-      const rawUsers = importedUsers.map(user => ({
+      const rawUsers = importedUsers.map((user) => ({
         Name: user.name,
         Email: user.email,
         Role: user.roleId,
@@ -317,7 +345,10 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       }));
 
       // Convert to CreateUserInput format
-      const convertedUsers = convertRawUsersToCreateUserInput(rawUsers, roles || []);
+      const convertedUsers = convertRawUsersToCreateUserInput(
+        rawUsers,
+        roles || []
+      );
 
       await createUsers(convertedUsers);
     } catch (error) {
@@ -336,13 +367,13 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     const errors: string[] = [];
 
     // Check for empty required fields
-    const emptyRowsRequired = importedUsers.filter(user => 
-      !user.name.trim() ||
-      !user.email.trim() ||  
-      !user.roleId
+    const emptyRowsRequired = importedUsers.filter(
+      (user) => !user.name.trim() || !user.email.trim() || !user.roleId
     );
     if (emptyRowsRequired.length > 0) {
-      errors.push("Please fill in all required fields (Name, Email, Role) before checking");
+      errors.push(
+        "Please fill in all required fields (Name, Email, Role) before checking"
+      );
     }
 
     // Check account limit
@@ -366,7 +397,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       }
     });
     if (rowsWithErrors.length > 0) {
-      rowsWithErrors.forEach(rowNumber => {
+      rowsWithErrors.forEach((rowNumber) => {
         errors.push(`Row ${rowNumber}: Please fix the errors in this row.`);
       });
     }
@@ -383,7 +414,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Find all rows with duplicate emails
     emailMap.forEach((rows, email) => {
       if (rows.length > 1) {
-        errors.push(`Duplicate emails found in rows: ${rows.sort((a, b) => a - b).join(", ")}`);
+        errors.push(
+          `Duplicate emails found in rows: ${rows
+            .sort((a, b) => a - b)
+            .join(", ")}`
+        );
       }
     });
 
@@ -392,12 +427,16 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     importedUsers.forEach((user, index) => {
       const email = user.email.trim();
       if (!email) return; // Skip empty emails
-      if (users.some(existingUser => existingUser.email === email)) {
+      if (users.some((existingUser) => existingUser.email === email)) {
         existingEmailRows.push(index + 1);
       }
     });
     if (existingEmailRows.length > 0) {
-      errors.push(`The following emails already exist in rows: ${existingEmailRows.sort((a, b) => a - b).join(", ")}`);
+      errors.push(
+        `The following emails already exist in rows: ${existingEmailRows
+          .sort((a, b) => a - b)
+          .join(", ")}`
+      );
     }
 
     // Check for duplicate phone numbers
@@ -412,7 +451,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Find all rows with duplicate phones
     phoneMap.forEach((rows, phone) => {
       if (rows.length > 1) {
-        errors.push(`Duplicate phone numbers found in rows: ${rows.sort((a, b) => a - b).join(", ")}`);
+        errors.push(
+          `Duplicate phone numbers found in rows: ${rows
+            .sort((a, b) => a - b)
+            .join(", ")}`
+        );
       }
     });
 
@@ -421,20 +464,26 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     importedUsers.forEach((user, index) => {
       const phone = user.phone ? String(user.phone).trim() : "";
       if (!phone) return; // Skip empty phones
-      if (users.some(existingUser => {
-        const metadata = existingUser.metadata as Record<string, any>;
-        return metadata?.phone === phone;
-      })) {
+      if (
+        users.some((existingUser) => {
+          const metadata = existingUser.metadata as Record<string, any>;
+          return metadata?.phone === phone;
+        })
+      ) {
         existingPhoneRows.push(index + 1);
       }
     });
     if (existingPhoneRows.length > 0) {
-      errors.push(`The following phone numbers already exist in rows: ${existingPhoneRows.sort((a, b) => a - b).join(", ")}`);
+      errors.push(
+        `The following phone numbers already exist in rows: ${existingPhoneRows
+          .sort((a, b) => a - b)
+          .join(", ")}`
+      );
     }
 
     setValidationError(errors);
     if (errors.length > 0) {
-       return false;
+      return false;
     }
     return true;
   };
@@ -449,14 +498,18 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-          isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+          isDragActive
+            ? "border-primary bg-primary/5"
+            : "border-muted-foreground/25"
         } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         <input {...getInputProps()} disabled={isUploading} />
         {isUploading ? (
           <div className="flex flex-col items-center justify-center">
             <Loader className="h-12 w-12 text-muted-foreground animate-spin" />
-            <p className="mt-2 text-sm text-muted-foreground">Processing Excel file...</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Processing Excel file...
+            </p>
           </div>
         ) : (
           <>
@@ -470,19 +523,19 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
         )}
       </div>
 
-   {(validationError.length > 0) && (
-            <div className="p-4 rounded-lg space-y-2 bg-red-50 border border-red-200">
-              {validationError.length > 0  && (
-                <>
-                  {validationError.map((error, index) => (
-                    <p key={`validation-${index}`} className="text-sm text-red-600">
-                      {error}
-                    </p>
-                  ))}
-                </>
-              )}
-            </div>
+      {validationError.length > 0 && (
+        <div className="p-4 rounded-lg space-y-2 bg-red-50 border border-red-200">
+          {validationError.length > 0 && (
+            <>
+              {validationError.map((error, index) => (
+                <p key={`validation-${index}`} className="text-sm text-red-600">
+                  {error}
+                </p>
+              ))}
+            </>
           )}
+        </div>
+      )}
 
       {importedUsers.length > 0 && (
         <div className="space-y-4">
@@ -522,7 +575,9 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={isLoading || importedUsers.some((user) => user.errors)}
+                disabled={
+                  isLoading || importedUsers.some((user) => user.errors)
+                }
                 className="bg-primary text-white hover:bg-primary/90"
                 size="sm"
               >
@@ -543,11 +598,17 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px]">No.</TableHead>
-                  <TableHead>Name <span className="text-red-500">*</span></TableHead>
-                  <TableHead>Email <span className="text-red-500">*</span></TableHead>
-                  <TableHead>Phone <span className="text-red-500">*</span></TableHead>
+                  <TableHead>
+                    Name <span className="text-red-500">*</span>
+                  </TableHead>
+                  <TableHead>
+                    Email <span className="text-red-500">*</span>
+                  </TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead className="w-[300px]">Address</TableHead>
-                  <TableHead>Role <span className="text-red-500">*</span></TableHead>
+                  <TableHead>
+                    Role <span className="text-red-500">*</span>
+                  </TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -567,7 +628,9 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                         />
                         {user.errors?.name && (
                           <div className="text-sm text-red-500 max-w-[300px]">
-                            <p className="whitespace-normal break-words">{user.errors.name}</p>
+                            <p className="whitespace-normal break-words">
+                              {user.errors.name}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -613,13 +676,19 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                           onChange={(e) =>
                             handleCellChange(user.id, "address", e.target.value)
                           }
-                          className={user.errors?.address ? "border-red-500 resize-none" : "resize-none"}
+                          className={
+                            user.errors?.address
+                              ? "border-red-500 resize-none"
+                              : "resize-none"
+                          }
                           disabled={isLoading}
                           rows={2}
                         />
                         {user.errors?.address && (
                           <div className="text-sm text-red-500 max-w-[300px]">
-                            <p className="whitespace-normal break-words">{user.errors.address}</p>
+                            <p className="whitespace-normal break-words">
+                              {user.errors.address}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -634,7 +703,9 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                           disabled={isLoading}
                         >
                           <SelectTrigger
-                            className={user.errors?.roleId ? "border-red-500" : ""}
+                            className={
+                              user.errors?.roleId ? "border-red-500" : ""
+                            }
                           >
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
@@ -671,10 +742,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
               </TableBody>
             </Table>
           </div>
-
-       
         </div>
       )}
     </div>
   );
-} 
+}

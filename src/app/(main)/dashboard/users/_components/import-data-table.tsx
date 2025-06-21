@@ -663,9 +663,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                           disabled={isLoading}
                         />
                         {user.errors?.phone && (
-                          <p className="text-sm text-red-500 break-words">
-                            {user.errors.phone}
-                          </p>
+                          <div className="text-sm text-red-500 max-w-[300px]">
+                            <p className="whitespace-normal break-words">
+                              {user.errors.phone}
+                            </p>
+                          </div>
                         )}
                       </div>
                     </TableCell>

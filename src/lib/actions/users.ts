@@ -481,6 +481,7 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
               address: metadata?.address || "",
             },
             status,
+            updatedAt: new Date(),
           })
           .returning();
 
@@ -502,6 +503,7 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
             roleIds.map((roleId) => ({
               userId: newUser.id,
               roleId,
+              updatedAt: new Date(),
             }))
           );
         }
@@ -640,6 +642,7 @@ async function updateUserCore({
             roleIds.map((roleId) => ({
               userId: id,
               roleId,
+              updatedAt: new Date(),
             }))
           );
 

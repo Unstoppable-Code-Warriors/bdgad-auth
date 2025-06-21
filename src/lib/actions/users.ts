@@ -2,7 +2,18 @@
 
 import { db } from "@/db/drizzle";
 import { users, userRoles, roles, passwordResetTokens } from "@/db/schema";
-import { count, eq, getTableColumns, or, ilike, inArray, and, not, sql, desc } from "drizzle-orm";
+import {
+  count,
+  eq,
+  getTableColumns,
+  or,
+  ilike,
+  inArray,
+  and,
+  not,
+  sql,
+  desc,
+} from "drizzle-orm";
 import { withAuth } from "@/lib/utils/auth";
 import bcrypt from "bcryptjs";
 import { FetchLimit } from "../constants";
@@ -92,9 +103,7 @@ async function getUsersCore({
       // Get users with their roles
       const usersWithRoles = search
         ? await baseQuery
-            .where(
-              ilike(users.email, `%${search}%`)
-            )
+            .where(ilike(users.email, `%${search}%`))
             .limit(limit)
             .offset(offset)
         : await baseQuery.limit(limit).offset(offset);
@@ -129,9 +138,7 @@ async function getUsersCore({
         ? await tx
             .select({ count: count() })
             .from(users)
-            .where(
-              ilike(users.email, `%${search}%`)
-            )
+            .where(ilike(users.email, `%${search}%`))
         : await tx.select({ count: count() }).from(users);
 
       return {
@@ -174,7 +181,9 @@ const validateName = (name: string): void => {
   }
   // Allow Vietnamese characters, letters, and single spaces
   if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
-    throw new Error("Name can only contain letters (including Vietnamese) and single spaces between words");
+    throw new Error(
+      "Name can only contain letters (including Vietnamese) and single spaces between words"
+    );
   }
 };
 
@@ -182,15 +191,17 @@ const validatePhone = (phone: string | undefined): void => {
   if (!phone) return; // Phone is optional
 
   const trimmedPhone = phone.trim();
-  
+
   // Require country code prefix (starting with +)
-  if (!trimmedPhone.startsWith('+')) {
+  if (!trimmedPhone.startsWith("+")) {
     throw new Error("Please enter a country code starting with +");
   }
 
   // Basic phone number validation
   if (trimmedPhone.length < 12 || trimmedPhone.length > 13) {
-    throw new Error("Phone number must be between 12-13 characters including country code");
+    throw new Error(
+      "Phone number must be between 12-13 characters including country code"
+    );
   }
 
   if (/\s/.test(trimmedPhone)) {
@@ -209,7 +220,9 @@ const validateAddress = (address: string | undefined): void => {
     throw new Error("Address must not exceed 200 characters");
   }
   if (!/^[a-zA-ZÀ-ỹ0-9\s\(\)\|\/\-\,\.]+$/.test(address)) {
-    throw new Error("Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: ( ) | / - , .");
+    throw new Error(
+      "Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: ( ) | / - , ."
+    );
   }
 };
 
@@ -224,8 +237,8 @@ const validateRoleIds = async (roleIds: number[]): Promise<void> => {
     .from(roles)
     .where(inArray(roles.id, roleIds));
 
-  const existingRoleIds = existingRoles.map(role => role.id);
-  const invalidRoleIds = roleIds.filter(id => !existingRoleIds.includes(id));
+  const existingRoleIds = existingRoles.map((role) => role.id);
+  const invalidRoleIds = roleIds.filter((id) => !existingRoleIds.includes(id));
 
   if (invalidRoleIds.length > 0) {
     throw new Error(`Invalid role IDs: ${invalidRoleIds.join(", ")}`);
@@ -240,7 +253,10 @@ const validateStatus = (status: string): void => {
 };
 
 // Add new validation function for checking duplicate phone numbers
-export const validatePhoneUniqueness = async (phone: string, userId: number): Promise<void> => {
+export const validatePhoneUniqueness = async (
+  phone: string,
+  userId: number
+): Promise<void> => {
   console.log("Validating phone uniqueness:", phone);
   const existingUser = await db
     .select({ id: users.id })
@@ -329,6 +345,7 @@ async function createUserCore({
           name,
           metadata,
           status,
+          updatedAt: new Date(),
         })
         .returning();
 
@@ -338,26 +355,32 @@ async function createUserCore({
           roleIds.map((roleId) => ({
             userId: newUser.id,
             roleId,
+            updatedAt: new Date(),
           }))
         );
       }
 
       // Generate secure random token
-		const resetToken = crypto.randomBytes(32).toString("hex")
-		const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-    console.log("new id user:", newUser.id);
-		// Store reset token in database
-		await tx.insert(passwordResetTokens).values({
-			userId: newUser.id,
-			token: resetToken,
-			expiresAt,
-			used: "false",
-		})
-    const redirectUrl = "https://bdgad.bio/auth"
+      console.log("new id user:", newUser.id);
+      // Store reset token in database
+      await tx.insert(passwordResetTokens).values({
+        userId: newUser.id,
+        token: resetToken,
+        expiresAt,
+        used: "false",
+      });
+      const redirectUrl = "https://bdgad.bio/auth";
 
       try {
-        await sendNewPasswordEmail(redirectUrl, newUser.email, resetToken, newUser.name);
+        await sendNewPasswordEmail(
+          redirectUrl,
+          newUser.email,
+          resetToken,
+          newUser.name
+        );
       } catch (emailError) {
         console.error("Failed to send new password email:", emailError);
       }
@@ -379,7 +402,13 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
   try {
     // Validate all users first before proceeding with any creation
     for (const userInput of userInputs) {
-      const { email, name, metadata, roleIds = [], status = "active" } = userInput;
+      const {
+        email,
+        name,
+        metadata,
+        roleIds = [],
+        status = "active",
+      } = userInput;
 
       // Validate email format
       validateEmail(email);
@@ -423,12 +452,18 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
     };
 
     const results: UserCreationResult[] = [];
-    const redirectUrl = "https://bdgad.bio/auth"
+    const redirectUrl = "https://bdgad.bio/auth";
 
     // Process each user in a transaction
     const finalResults = await db.transaction(async (tx) => {
       for (const userInput of userInputs) {
-        const { email, name, metadata, roleIds = [], status = "active" } = userInput;
+        const {
+          email,
+          name,
+          metadata,
+          roleIds = [],
+          status = "active",
+        } = userInput;
 
         // Generate password for this user
         const generatedPassword = generateRandomPassword();
@@ -441,7 +476,7 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
             email,
             password: hashedPassword,
             name,
-            metadata:{
+            metadata: {
               phone: metadata?.phone || "",
               address: metadata?.address || "",
             },
@@ -450,16 +485,16 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
           .returning();
 
         // Generate secure random token
-		const resetToken = crypto.randomBytes(32).toString("hex")
-		const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-		// Store reset token in database
-		await tx.insert(passwordResetTokens).values({
+        // Store reset token in database
+        await tx.insert(passwordResetTokens).values({
           userId: newUser.id,
           token: resetToken,
           expiresAt,
           used: "false",
-        })
+        });
 
         // Assign roles if provided
         if (roleIds.length > 0) {
@@ -484,7 +519,10 @@ async function createUsersCore(userInputs: CreateUserInput[]) {
     try {
       await sendPasswordEmailsToUsers(finalResults, redirectUrl);
     } catch (emailError) {
-      console.error("Failed to send redirect to set password emails:", emailError);
+      console.error(
+        "Failed to send redirect to set password emails:",
+        emailError
+      );
       // Don't throw here - user creation was successful, just email failed
     }
 
@@ -614,7 +652,10 @@ async function updateUserCore({
                 newRole[0].name
               );
             } catch (emailError) {
-              console.error("Failed to send role change notification:", emailError);
+              console.error(
+                "Failed to send role change notification:",
+                emailError
+              );
               // Don't throw here - role update was successful, just email failed
             }
           }
@@ -680,4 +721,3 @@ async function deleteUserCore({ id, reason }: { id: number; reason?: string }) {
 }
 export const deleteUser = withAuth(deleteUserCore);
 export type DeleteUserResult = Awaited<ReturnType<typeof deleteUser>>;
-

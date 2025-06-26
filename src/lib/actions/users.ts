@@ -355,7 +355,6 @@ async function createUserCore({
           roleIds.map((roleId) => ({
             userId: newUser.id,
             roleId,
-            updatedAt: new Date(),
           }))
         );
       }
@@ -642,7 +641,6 @@ async function updateUserCore({
             roleIds.map((roleId) => ({
               userId: id,
               roleId,
-              updatedAt: new Date(),
             }))
           );
 

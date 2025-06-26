@@ -42,8 +42,6 @@ export const userRoles = pgTable("user_roles", {
   roleId: integer("role_id").references(() => roles.id, {
     onDelete: "cascade",
   }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const passwordResetTokens = pgTable("password_reset_tokens", {

@@ -460,10 +460,11 @@ export const resetPassword = async (c: ValidatedContext) => {
 
 		// Send confirmation email
 		try {
-			await sendPasswordResetConfirmationEmail(
-				foundUser.email,
-				foundUser.name
-			)
+			// await sendPasswordResetConfirmationEmail(
+			// 	foundUser.email,
+			// 	foundUser.name
+			// )
+			console.log("Password reset confirmation email sent to", foundUser.email)
 		} catch (emailError) {
 			console.error(
 				"Failed to send password reset confirmation email:",

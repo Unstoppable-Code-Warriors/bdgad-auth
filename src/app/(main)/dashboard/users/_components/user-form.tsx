@@ -179,16 +179,8 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
       dialog.closeAll();
     } catch (error) {
       console.error(error);
-      if (error instanceof Error && error.message.includes("Phone number already exists")) {
-        toast.error("Phone number already exists in the system");
-      } else {
-        toast.error(
-          `Failed to ${isUpdateMode ? "update" : "create"} user${
-            !isUpdateMode ? ", please check if the email address has been used before." : "."
-          }`
-        );
-      }
-    } finally {
+        toast.error("Failed to create user");
+      } finally {
       setLoading(false);
     }
   };

@@ -134,3 +134,34 @@ export const sendPasswordResetConfirmationEmail = async (
 		// Don't throw error here as the password reset was successful
 	}
 }
+
+export const sendSetYourPasswordEmail = async (
+	email: string,
+	userName: string
+) => {
+	const mailOptions = {
+		from: EMAIL_USER,
+		to: email,
+		subject: "Set Your Password - BDGAD Auth",
+		html: `
+			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+				<h2 style="color: #28a745;">Set Your Password</h2>
+				<p>Hello ${userName},</p>
+				<p>Your account has been created. To activate your account.</p>
+				<p>If you didn't make this change, please contact our support team immediately.</p>
+				<hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+				<p style="color: #666; font-size: 12px;">
+					This is an automated email from BDGAD Auth Service. Please do not reply to this email.
+				</p>
+			</div>
+		`,
+	}
+
+	try {
+		await transporter.sendMail(mailOptions)
+		console.log(`Set your password email sent to ${email}`)
+	} catch (error) {
+		console.error("Error sending set your password email:", error)
+		// Don't throw error here as the password reset was successful
+	}
+}

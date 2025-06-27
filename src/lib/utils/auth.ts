@@ -1,4 +1,4 @@
-import { auth } from "@/lib/next-auth/auth"
+import { auth } from "../../lib/next-auth/auth"
 
 export class AuthError extends Error {
 	constructor(message: string = "Unauthorized: Authentication required") {

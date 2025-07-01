@@ -153,7 +153,7 @@ const ImportExcelForm = ({
       return convertedUsers;
     } catch (err) {
       console.error("Error reading Excel file:", err);
-      setErrorText("Failed to read Excel file. Please check if the file is corrupted or in correct format.");
+      setErrorText("Không thể đọc file Excel. Vui lòng kiểm tra xem file có bị sai hoặc không đúng định dạng không.");
     }
   };
 
@@ -174,14 +174,14 @@ const ImportExcelForm = ({
       console.log("processedData from call apiii", processedData);
      
       await toast.promise(createUsers(processedData), {
-        loading: "Creating users...",
-        success: `Excel file parsed successfully. ${processedData.length} valid account(s) found.`,
+        loading: "Đang tạo người dùng...",
+        success: `Phân tích file Excel thành công. Tìm thấy ${processedData.length} tài khoản hợp lệ.`,
         error: (err) => {
           // Check if it's a duplicate email error
           if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
-            return "One or more email addresses already exist in the system. Please check your data and try again.";
+            return "Một hoặc nhiều địa chỉ email đã tồn tại trong hệ thống. Vui lòng kiểm tra dữ liệu của bạn và thử lại.";
           }
-          return "Failed to create users. Please try again.";
+          return "Không thể tạo người dùng. Vui lòng thử lại.";
         },
       });
       // Invalidate and refetch users data
@@ -192,10 +192,10 @@ const ImportExcelForm = ({
       console.error("Error reading Excel file:", err);
       // Check if it's a duplicate email error
       if (err instanceof Error && err.message.includes('duplicate key value violates unique constraint "users_email_unique"')) {
-        toast.error("One or more email addresses already exist in the system. Please check your data and try again.");
+        toast.error("Một hoặc nhiều địa chỉ email đã tồn tại trong hệ thống. Vui lòng kiểm tra dữ liệu của bạn và thử lại.");
       } else {
         toast.error(
-          "Failed to read Excel file. Please check if the file is corrupted or in correct format."
+          "Không thể đọc file Excel. Vui lòng kiểm tra xem file có bị hỏng hoặc không đúng định dạng không."
         );
       }
     }
@@ -205,7 +205,7 @@ const ImportExcelForm = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium" htmlFor="excelFile">
-          Upload Excel File
+          Tải lên file Excel
         </label>
         <div className="flex items-center gap-2">
           <Input
@@ -229,7 +229,7 @@ const ImportExcelForm = ({
         {error && <p className="text-sm text-red-500">{error}</p>}
         {errorText && <p className="text-sm text-red-500">{errorText}</p>}
         {file && !error && !errorText && (
-          <p className="text-sm text-green-600">File selected: {file.name}</p>
+          <p className="text-sm text-green-600">Đã chọn file: {file.name}</p>
         )}
       </div>
       <Button
@@ -237,7 +237,7 @@ const ImportExcelForm = ({
         type="submit"
         disabled={!file || loading}
       >
-        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Submit"}
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Gửi"}
       </Button>
     </form>
   );

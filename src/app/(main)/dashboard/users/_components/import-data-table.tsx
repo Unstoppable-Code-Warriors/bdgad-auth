@@ -40,6 +40,7 @@ import {
   validateRoleExcel,
 } from "@/lib/utils/validate-data-excel";
 import { useQueryClient } from "@tanstack/react-query";
+import { userRole } from "@/lib/constants";
 
 interface ImportedUser {
   id: string;
@@ -209,29 +210,29 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Name validation
     const nameStr = row.Name ? String(row.Name) : "";
     if (!nameStr.trim()) {
-      errors.name = "Name is required";
+      errors.name = "Tên là bắt buộc";  
     } else {
       const trimmedName = nameStr.trim();
       if (trimmedName.length < 3 || trimmedName.length > 50) {
-        errors.name = "Name must be between 3-50 characters";
+        errors.name = "Tên phải có từ 3-50 ký tự";
       }
       // Check for multiple consecutive spaces
       if (/\s{2,}/.test(trimmedName)) {
-        errors.name = "Name cannot contain multiple consecutive spaces";
+        errors.name = "Tên không được chứa nhiều khoảng trắng liên tiếp";
       }
       // Allow only letters (including Vietnamese) and single spaces
       if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
         errors.name =
-          "Name can only contain letters (including Vietnamese) and single spaces between words";
+          "Tên chỉ được chứa chữ cái (bao gồm tiếng Việt) và khoảng trắng đơn giữa các từ";
       }
     }
 
     // Email validation
     const emailStr = row.Email ? String(row.Email) : "";
     if (!emailStr.trim()) {
-      errors.email = "Email is required";
+      errors.email = "Email là bắt buộc";
     } else if (!/^\S+@\S+$/.test(emailStr.trim())) {
-      errors.email = "Invalid email format";
+      errors.email = "Định dạng email không hợp lệ";
     }
 
     // Phone validation (optional)
@@ -239,14 +240,14 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       const phone = String(row.Phone).trim();
 
       if (!phone.startsWith("+")) {
-        errors.phone = "Please enter a country code starting with +";
+        errors.phone = "Vui lòng nhập mã quốc gia bắt đầu bằng +";
       } else if (phone.length < 12 || phone.length > 13) {
         errors.phone =
-          "Phone number must be between 12-13 characters including country code";
+          "Số điện thoại phải có từ 12-13 ký tự bao gồm mã quốc gia";
       } else if (/\s/.test(phone)) {
-        errors.phone = "Phone number cannot contain spaces";
+        errors.phone = "Số điện thoại không được chứa khoảng trắng";
       } else if (!/^\+\d+$/.test(phone)) {
-        errors.phone = "Phone number can only contain + and digits";
+        errors.phone = "Số điện thoại chỉ được chứa + và các chữ số";
       }
     }
 
@@ -254,28 +255,28 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     if (row.Address) {
       const address = String(row.Address).trim();
       if (address.length > 200) {
-        errors.address = "Address must be 200 characters or less";
+        errors.address = "Địa chỉ phải có 200 ký tự hoặc ít hơn";
       }
       // Check for multiple consecutive spaces
       if (/\s{2,}/.test(address)) {
-        errors.address = "Address cannot contain multiple consecutive spaces";
+        errors.address = "Địa chỉ không được chứa nhiều khoảng trắng liên tiếp";
       }
       // Check for allowed characters
       if (!/^[a-zA-ZÀ-ỹ0-9\s,\.\/]+$/.test(address)) {
         errors.address =
-          "Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: , . /";
+          "Địa chỉ chỉ được chứa chữ cái (bao gồm tiếng Việt), số, khoảng trắng và các ký tự đặc biệt: , . /";
       }
     }
 
     // Role validation
     if (!row.Role) {
-      errors.roleId = "Role is required";
+      errors.roleId = "Vai trò là bắt buộc";
     } else {
       const roleNum = Number(row.Role);
       if (isNaN(roleNum) || !Number.isInteger(roleNum)) {
-        errors.roleId = "Role is required";
+        errors.roleId = "Vai trò là bắt buộc";
       } else if (roleNum < 1 || roleNum > 5) {
-        errors.roleId = "Role is required";
+        errors.roleId = "Vai trò là bắt buộc";
       }
     }
 
@@ -353,11 +354,11 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       await createUsers(convertedUsers);
     } catch (error) {
       console.error("Error importing users:", error);
-      toast.error("Failed to create users");
+      toast.error("Không thể tạo người dùng");
     } finally {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       router.push("/dashboard/users");
-      toast.success("Users created successfully");
+      toast.success("Tạo người dùng thành công");
       setIsLoading(false);
     }
   };
@@ -372,13 +373,13 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     );
     if (emptyRowsRequired.length > 0) {
       errors.push(
-        "Please fill in all required fields (Name, Email, Role) before checking"
+        "Vui lòng điền tất cả các trường bắt buộc (Tên, Email, Vai trò) trước khi kiểm tra"
       );
     }
 
     // Check account limit
     if (importedUsers.length > 50) {
-      errors.push("Cannot import more than 50 accounts at once");
+      errors.push("Không thể nhập quá 50 tài khoản cùng lúc");
     }
 
     // Check for row-level validation errors
@@ -397,9 +398,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       }
     });
     if (rowsWithErrors.length > 0) {
-      rowsWithErrors.forEach((rowNumber) => {
-        errors.push(`Row ${rowNumber}: Please fix the errors in this row.`);
-      });
+      errors.push(`Có lỗi trong các hàng: ${rowsWithErrors.join(", ")}`);
     }
 
     // Check for duplicate emails within the import
@@ -485,12 +484,15 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     if (errors.length > 0) {
       return false;
     }
+    setValidationError([]);
+    toast.success("Tất cả dữ liệu đều hợp lệ");
     return true;
   };
 
   const handleClearTable = () => {
     setImportedUsers([]);
     setValidationError([]);
+    toast.success("Bảng đã được xóa");
   };
 
   return (
@@ -540,7 +542,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
       {importedUsers.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">Preview Data</h3>
+            <h3 className="text-lg font-medium">Dữ liệu đã nhập</h3>
             <div className="space-x-2 items-start">
               <Button
                 variant="outline"
@@ -549,20 +551,20 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                 disabled={isLoading}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Row
+                Thêm hàng
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   if (handleCheck()) {
-                    toast.success("All data is valid");
+                    toast.success("Tất cả dữ liệu đều hợp lệ");
                   }
                 }}
                 disabled={isLoading}
               >
                 <Check className="h-4 w-4 mr-2" />
-                Check
+                Kiểm tra
               </Button>
               <Button
                 variant="outline"
@@ -571,7 +573,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                 disabled={isLoading}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Clear Table
+                Xóa bảng
               </Button>
               <Button
                 onClick={handleSave}
@@ -584,10 +586,10 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                 {isLoading ? (
                   <>
                     <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    Đang tạo...
                   </>
                 ) : (
-                  "Create users"
+                  "Tạo người dùng"
                 )}
               </Button>
             </div>
@@ -597,17 +599,17 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">No.</TableHead>
+                  <TableHead className="w-[50px]">STT</TableHead>
                   <TableHead>
-                    Name <span className="text-red-500">*</span>
+                    Tên <span className="text-red-500">*</span>
                   </TableHead>
                   <TableHead>
                     Email <span className="text-red-500">*</span>
                   </TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead className="w-[300px]">Address</TableHead>
+                  <TableHead>Số điện thoại</TableHead>
+                  <TableHead className="w-[300px]">Địa chỉ</TableHead>
                   <TableHead>
-                    Role <span className="text-red-500">*</span>
+                    Vai trò <span className="text-red-500">*</span>
                   </TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
@@ -709,7 +711,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                               user.errors?.roleId ? "border-red-500" : ""
                             }
                           >
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue placeholder="Chọn vai trò" />
                           </SelectTrigger>
                           <SelectContent>
                             {roles?.map((role) => (
@@ -717,7 +719,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
                                 key={role.id}
                                 value={role.id?.toString() || ""}
                               >
-                                {role.name}
+                                {userRole[role.name]}
                               </SelectItem>
                             ))}
                           </SelectContent>

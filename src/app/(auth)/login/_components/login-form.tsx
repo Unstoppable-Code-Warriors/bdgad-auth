@@ -18,19 +18,19 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
 
-const formSchema = z.object({
-	email: z.string().email("Please enter a valid email address"),
-	password: z.string().min(1, "Password is required"),
+const LoginSchema = z.object({
+	email: z.string().email("Định dạng email không hợp lệ").min(1, "Email là bắt buộc"),
+	password: z.string().min(1, "Mật khẩu là bắt buộc"),
 })
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof LoginSchema>
 
 export function LoginForm() {
 	const router = useRouter()
 	const [isLoading, setIsLoading] = useState(false)
 
 	const form = useForm<FormValues>({
-		resolver: zodResolver(formSchema),
+		resolver: zodResolver(LoginSchema),
 		defaultValues: {
 			email: "",
 			password: "",
@@ -48,7 +48,7 @@ export function LoginForm() {
 
 			if (result?.error) {
 				form.setError("root", {
-					message: "Invalid email or password",
+					message: "Email hoặc mật khẩu không hợp lệ",
 				})
 				return
 			}
@@ -57,7 +57,7 @@ export function LoginForm() {
 			router.refresh()
 		} catch (error) {
 			form.setError("root", {
-				message: "An error occurred. Please try again.",
+				message: "Đã xảy ra lỗi. Vui lòng thử lại.",
 			})
 		} finally {
 			setIsLoading(false)
@@ -67,9 +67,9 @@ export function LoginForm() {
 	return (
 		<div className="space-y-6">
 			<div className="space-y-2 text-center">
-				<h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+				<h1 className="text-2xl font-semibold tracking-tight">Chào mừng trở lại</h1>
 				<p className="text-sm text-muted-foreground">
-					Enter your credentials to access your account
+					Nhập thông tin để truy cập tài khoản của bạn
 				</p>
 			</div>
 
@@ -83,7 +83,7 @@ export function LoginForm() {
 								<FormLabel>Email</FormLabel>
 								<FormControl>
 									<Input
-										placeholder="name@example.com"
+										placeholder="ten@example.com"
 										type="email"
 										disabled={isLoading}
 										{...field}
@@ -101,7 +101,7 @@ export function LoginForm() {
 								<FormLabel>Password</FormLabel>
 								<FormControl>
 									<Input
-										placeholder="Enter your password"
+										placeholder="Nhập mật khẩu của bạn"
 										type="password"
 										disabled={isLoading}
 										{...field}
@@ -124,10 +124,10 @@ export function LoginForm() {
 						{isLoading ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Signing in...
+								Đang đăng nhập...
 							</>
 						) : (
-							"Sign in"
+							"Đăng nhập"
 						)}
 					</Button>
 				</form>

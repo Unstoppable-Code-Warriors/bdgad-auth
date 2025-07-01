@@ -20,34 +20,34 @@ export async function sendBanNotification(email: string, name: string, reason: s
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Account Access Suspended - BDGAD",
+      subject: "Tài khoản bị tạm ngừng - BDGAD",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dc2626;">Account Access Suspended</h2>
-          <p>Hello ${name},</p>
-          <p>Your access to the BDGAD system has been suspended.</p>
+          <h2 style="color: #dc2626;">Tài khoản bị tạm ngừng</h2>
+          <p>Xin chào ${name},</p>
+          <p>Quyền truy cập của bạn vào hệ thống BDGAD đã bị tạm ngừng.</p>
           
           <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Important Notice:</strong> You will no longer be able to log in to the system.</p>
-            <p><strong>Reason for suspension:</strong> ${reason}</p>
-            <p>If you believe this is a mistake, please contact your system administrator immediately.</p>
+            <p><strong>Thông báo quan trọng:</strong> Bạn sẽ không thể đăng nhập vào hệ thống.</p>
+            <p><strong>Lý do tạm ngừng:</strong> ${reason}</p>
+            <p>Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ với quản trị viên hệ thống ngay lập tức.</p>
           </div>
           
-          <p>Best regards,<br>BDGAD Team</p>
+          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
         </div>
       `,
-      text: `Account Access Suspended
+      text: `Tài khoản bị tạm ngừng
 
-Hello ${name},
+Xin chào ${name},
 
-Your access to the BDGAD system has been suspended.
+Quyền truy cập của bạn vào hệ thống BDGAD đã bị tạm ngừng.
 
-Important Notice: You will no longer be able to log in to the system.
-Reason for suspension: ${reason}
-If you believe this is a mistake, please contact your system administrator immediately.
+Thông báo quan trọng: Bạn sẽ không thể đăng nhập vào hệ thống.
+Lý do tạm ngừng: ${reason}
+Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ với quản trị viên hệ thống ngay lập tức.
 
-Best regards,
-BDGAD Team`,
+Trân trọng,
+Đội ngũ BDGAD`,
     };
 
     await transporter.sendMail(mailOptions);
@@ -66,34 +66,34 @@ export async function sendUnbanNotification(email: string, name: string, reason:
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Account Access Restored - BDGAD",
+      subject: "Tài khoản được khôi phục - BDGAD",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #16a34a;">Account Access Restored</h2>
-          <p>Hello ${name},</p>
-          <p>Your access to the BDGAD system has been restored.</p>
+          <h2 style="color: #16a34a;">Tài khoản được khôi phục</h2>
+          <p>Xin chào ${name},</p>
+          <p>Quyền truy cập của bạn vào hệ thống BDGAD đã được khôi phục.</p>
           
           <div style="background-color: #dcfce7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Important Notice:</strong> You can now log in to the system again.</p>
-            <p><strong>Reason for restoration:</strong> ${reason}</p>
-            <p>If you have any questions, please contact your system administrator.</p>
+            <p><strong>Thông báo quan trọng:</strong> Bây giờ bạn có thể đăng nhập vào hệ thống trở lại.</p>
+            <p><strong>Lý do khôi phục:</strong> ${reason}</p>
+            <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với quản trị viên hệ thống.</p>
           </div>
           
-          <p>Best regards,<br>BDGAD Team</p>
+          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
         </div>
       `,
-      text: `Account Access Restored
+      text: `Tài khoản được khôi phục
 
-Hello ${name},
+Xin chào ${name},
 
-Your access to the BDGAD system has been restored.
+Quyền truy cập của bạn vào hệ thống BDGAD đã được khôi phục.
 
-Important Notice: You can now log in to the system again.
-Reason for restoration: ${reason}
-If you have any questions, please contact your system administrator.
+Thông báo quan trọng: Bây giờ bạn có thể đăng nhập vào hệ thống trở lại.
+Lý do khôi phục: ${reason}
+Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với quản trị viên hệ thống.
 
-Best regards,
-BDGAD Team`,
+Trân trọng,
+Đội ngũ BDGAD`,
     };
 
     await transporter.sendMail(mailOptions);

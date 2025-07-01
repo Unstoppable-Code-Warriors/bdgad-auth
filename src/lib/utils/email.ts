@@ -22,37 +22,34 @@ export const sendPasswordEmail = async (
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your Account Password - Welcome!",
+      subject: "Mật khẩu tài khoản của bạn - Chào mừng!",
       html: `
 				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-					<h2 style="color: #333;">Welcome to BDGAD!</h2>
-					<p>Hello ${name},</p>
-					<p>Your account has been created successfully. Here are your login credentials:</p>
-					
+					<h2 style="color: #333;">Chào mừng đến với BDGAD!</h2>
+					<p>Xin chào ${name},</p>
+					<p>Tài khoản của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:</p>
 					<div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
 						<p><strong>Email:</strong> ${email}</p>
-						<p><strong>Password:</strong> <code style="background-color: #e1e1e1; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${password}</code></p>
+						<p><strong>Mật khẩu:</strong> <code style="background-color: #e1e1e1; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${password}</code></p>
 					</div>
-					
 					<p style="color: #666; font-size: 14px;">
-						<strong>Important:</strong> For security reasons, please change your password after your first login.
+						<strong>Lưu ý:</strong> Vì lý do bảo mật, hãy đổi mật khẩu sau khi đăng nhập lần đầu tiên.
 					</p>
-					
-					<p>Best regards</p>
+					<p>Trân trọng</p>
 				</div>
 			`,
-      text: `Welcome to BDGAD!
+      text: `Chào mừng đến với BDGAD!
 
-Hello ${name},
+Xin chào ${name},
 
-Your account has been created successfully. Here are your login credentials:
+Tài khoản của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập của bạn:
 
 Email: ${email}
-Password: ${password}
+Mật khẩu: ${password}
 
-Important: For security reasons, please change your password after your first login.
+Lưu ý: Vì lý do bảo mật, hãy đổi mật khẩu sau khi đăng nhập lần đầu tiên.
 
-Best regards`,
+Trân trọng`,
     };
 
     await transporter.sendMail(mailOptions);
@@ -79,25 +76,25 @@ export const sendPasswordEmailsToUsers = async (
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: user.email,
-        subject: "Welcome to BDGAD - Set Your Password",
+        subject: "Chào mừng đến với BDGAD - Đặt mật khẩu của bạn",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Welcome to BDGAD!</h2>
-            <p>Hello ${user.name},</p>
-            <p>An account has been created for you in the BDGAD system. To activate your account, please set your password by clicking the button below:</p>
+            <h2 style="color: #333;">Chào mừng đến với BDGAD!</h2>
+            <p>Xin chào ${user.name},</p>
+            <p>Một tài khoản đã được tạo cho bạn trong hệ thống BDGAD. Để kích hoạt tài khoản, vui lòng đặt mật khẩu bằng cách nhấn vào nút bên dưới:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${redirectUrl}/new-password?token=${token}" 
                  style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                Set Your Password
+                Đặt mật khẩu
               </a>
             </div>
-            <p>Or copy and paste this link into your browser:</p>
+            <p>Hoặc sao chép và dán liên kết này vào trình duyệt của bạn:</p>
             <p style="word-break: break-all; color: #666;">${redirectUrl}/new-password?token=${token}</p>
-            <p><strong>This link will expire in 1 hour.</strong></p>
-            <p>If you were not expecting this email, you can safely ignore it.</p>
+            <p><strong>Liên kết này sẽ hết hạn sau 1 giờ.</strong></p>
+            <p>Nếu bạn không mong đợi email này, bạn có thể bỏ qua nó.</p>
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
             <p style="color: #666; font-size: 12px;">
-              This is an automated message from the BDGAD Auth Service. Please do not reply to this email.
+              Đây là email tự động từ BDGAD Auth Service. Vui lòng không trả lời email này.
             </p>
           </div>
         `,
@@ -130,34 +127,31 @@ export const sendRoleChangeEmail = async (
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Your Role Has Been Updated - BDGAD",
+      subject: "Vai trò của bạn đã được cập nhật - BDGAD",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Role Update Notification</h2>
-          <p>Hello ${name},</p>
-          <p>Your role in the BDGAD system has been updated.</p>
-          
+          <h2 style="color: #333;">Thông báo cập nhật vai trò</h2>
+          <p>Xin chào ${name},</p>
+          <p>Vai trò của bạn trong hệ thống BDGAD đã được cập nhật.</p>
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>New Role:</strong> ${newRoleName}</p>
+            <p><strong>Vai trò mới:</strong> ${newRoleName}</p>
           </div>
-          
-          <p>If you have any questions about your new role or its permissions, please contact your system administrator.</p>
-          
-          <p>Best regards,<br>BDGAD Team</p>
+          <p>Nếu bạn có bất kỳ thắc mắc nào về vai trò mới hoặc quyền hạn, vui lòng liên hệ với quản trị viên hệ thống.</p>
+          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
         </div>
       `,
-      text: `Role Update Notification
+      text: `Thông báo cập nhật vai trò
 
-Hello ${name},
+Xin chào ${name},
 
-Your role in the BDGAD system has been updated.
+Vai trò của bạn trong hệ thống BDGAD đã được cập nhật.
 
-New Role: ${newRoleName}
+Vai trò mới: ${newRoleName}
 
-If you have any questions about your new role or its permissions, please contact your system administrator.
+Nếu bạn có bất kỳ thắc mắc nào về vai trò mới hoặc quyền hạn, vui lòng liên hệ với quản trị viên hệ thống.
 
-Best regards,
-BDGAD Team`,
+Trân trọng,
+Đội ngũ BDGAD`,
     };
 
     await transporter.sendMail(mailOptions);
@@ -179,32 +173,30 @@ export const sendBanNotificationEmail = async (
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Account Access Suspended - BDGAD",
+      subject: "Tài khoản bị tạm ngừng - BDGAD",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dc2626;">Account Access Suspended</h2>
-          <p>Hello ${name},</p>
-          <p>Your access to the BDGAD system has been suspended.</p>
-          
+          <h2 style="color: #dc2626;">Tài khoản bị tạm ngừng</h2>
+          <p>Xin chào ${name},</p>
+          <p>Quyền truy cập của bạn vào hệ thống BDGAD đã bị tạm ngừng.</p>
           <div style="background-color: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Important Notice:</strong> You will no longer be able to log in to the system.</p>
-            <p>If you believe this is a mistake, please contact your system administrator immediately.</p>
+            <p><strong>Thông báo quan trọng:</strong> Bạn sẽ không thể đăng nhập vào hệ thống.</p>
+            <p>Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ với quản trị viên hệ thống ngay lập tức.</p>
           </div>
-          
-          <p>Best regards,<br>BDGAD Team</p>
+          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
         </div>
       `,
-      text: `Account Access Suspended
+      text: `Tài khoản bị tạm ngừng
 
-Hello ${name},
+Xin chào ${name},
 
-Your access to the BDGAD system has been suspended.
+Quyền truy cập của bạn vào hệ thống BDGAD đã bị tạm ngừng.
 
-Important Notice: You will no longer be able to log in to the system.
-If you believe this is a mistake, please contact your system administrator immediately.
+Thông báo quan trọng: Bạn sẽ không thể đăng nhập vào hệ thống.
+Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ với quản trị viên hệ thống ngay lập tức.
 
-Best regards,
-BDGAD Team`,
+Trân trọng,
+Đội ngũ BDGAD`,
     };
 
     await transporter.sendMail(mailOptions);
@@ -227,36 +219,33 @@ export async function sendDeletionEmail(
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Account Deletion Notice - BDGAD",
+      subject: "Thông báo xóa tài khoản - BDGAD",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Account Deletion Notice</h2>
-          <p>Dear ${name},</p>
-          <p>This email is to inform you that your account has been permanently deleted from the BDGAD system.</p>
-          
+          <h2 style="color: #333;">Thông báo xóa tài khoản</h2>
+          <p>Kính gửi ${name},</p>
+          <p>Email này thông báo rằng tài khoản của bạn đã bị xóa vĩnh viễn khỏi hệ thống BDGAD.</p>
           <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            ${reason ? `<p><strong>Reason for Deletion:</strong> ${reason}</p>` : ""}
-            <p><strong>Important Notice:</strong> All your data associated with this account has been permanently removed from our system.</p>
+            ${reason ? `<p><strong>Lý do xóa:</strong> ${reason}</p>` : ""}
+            <p><strong>Thông báo quan trọng:</strong> Tất cả dữ liệu liên quan đến tài khoản này đã bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.</p>
           </div>
-          
-          <p>If you believe this action was taken in error, please contact our support team immediately.</p>
-          
-          <p>Best regards,<br>BDGAD Team</p>
+          <p>Nếu bạn cho rằng hành động này là nhầm lẫn, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi ngay lập tức.</p>
+          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
         </div>
       `,
-      text: `Account Deletion Notice
+      text: `Thông báo xóa tài khoản
 
-Dear ${name},
+Kính gửi ${name},
 
-This email is to inform you that your account has been permanently deleted from the BDGAD system.
+Email này thông báo rằng tài khoản của bạn đã bị xóa vĩnh viễn khỏi hệ thống BDGAD.
 
-${reason ? `Reason for Deletion: ${reason}\n` : ""}
-Important Notice: All your data associated with this account has been permanently removed from our system.
+${reason ? `Lý do xóa: ${reason}\n` : ""}
+Thông báo quan trọng: Tất cả dữ liệu liên quan đến tài khoản này đã bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.
 
-If you believe this action was taken in error, please contact our support team immediately.
+Nếu bạn cho rằng hành động này là nhầm lẫn, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi ngay lập tức.
 
-Best regards,
-BDGAD Team`,
+Trân trọng,
+Đội ngũ BDGAD`,
     };
 
     await transporter.sendMail(mailOptions);

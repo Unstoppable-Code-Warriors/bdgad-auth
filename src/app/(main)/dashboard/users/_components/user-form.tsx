@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { userRole } from "@/lib/constants";
 
 interface UserFormProps {
   action: "create" | "update";
@@ -52,52 +53,52 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
       name: (value: string) => {
         const trimmedValue = value.trim();
       
-        if (trimmedValue.length === 0) return "Name is required";
+        if (trimmedValue.length === 0) return "Tên là bắt buộc";
       
         const validPattern = /^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/u;
       
         if (!validPattern.test(trimmedValue)) {
-          return "Name can only contain letters (including Vietnamese) and single spaces between words";
+          return "Tên chỉ được chứa chữ cái (bao gồm tiếng Việt) và khoảng trắng giữa các từ";
         }
       
-        if (trimmedValue.length > 50) return "Name must be 50 characters or less";
+        if (trimmedValue.length > 50) return "Tên không được vượt quá 50 ký tự";
       
         return null;
       },
       email: (value: string) => {
         const trimmedValue = value.trim();
-        if (trimmedValue.length === 0) return "Email is required";
-        if (!/^\S+@\S+$/.test(trimmedValue)) return "Invalid email format";
+        if (trimmedValue.length === 0) return "Email là bắt buộc";
+        if (!/^\S+@\S+$/.test(trimmedValue)) return "Định dạng email không hợp lệ";
         
         // Check if email already exists in the system (skip check in update mode)
         if (!isUpdateMode) {
           const emailExists = users.some(user => user.email === trimmedValue);
-          if (emailExists) return "Email already exists in the system";
+          if (emailExists) return "Email đã tồn tại trong hệ thống";
         }
         
         return null;
       },
-      roleId: (value: string) => (value ? null : "Please select a role"),
+      roleId: (value: string) => (value ? null : "Vui lòng chọn vai trò"),
       phone: (value: string) => {
         const trimmedValue = value.trim();
         if (!trimmedValue) return null; // Phone is optional
       
         // Require country code prefix (starting with +)
         if (!trimmedValue.startsWith('+')) {
-          return "Please enter a country code starting with +";
+          return "Vui lòng nhập mã quốc gia bắt đầu bằng +";
         }
 
         // Basic phone number validation
         if (trimmedValue.length < 12 || trimmedValue.length > 13) {
-          return "Phone number must be between 12-13 characters including country code";
+          return "Số điện thoại phải có từ 12-13 ký tự bao gồm mã quốc gia";
         }
 
         if (!/^\+\d+$/.test(trimmedValue)) {
-          return "Phone number can only contain + and digits";
+          return "Số điện thoại chỉ được chứa + và các chữ số";
         }
 
         if (/\s/.test(trimmedValue)) {
-          return "Phone number cannot contain spaces";
+          return "Số điện thoại không được chứa khoảng trắng";
         }
       
         // Check if phone already exists in the system
@@ -106,7 +107,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
           const metadata = user.metadata as UserMetadata;
           return metadata?.phone === trimmedValue;
         });
-        if (phoneExists) return "Phone number already exists in the system";
+        if (phoneExists) return "Số điện thoại đã tồn tại trong hệ thống";
       
         return null;
       },
@@ -116,17 +117,17 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         
         // Check for multiple spaces
         if (/\s{2,}/.test(trimmedValue)) {
-          return "Address cannot contain multiple spaces between words";
+          return "Địa chỉ không được chứa nhiều khoảng trắng liên tiếp";
         }
         
         // Check for allowed characters: letters (including Vietnamese), numbers, spaces, commas, and slashes
         const validPattern = /^[a-zA-ZÀ-ỹ0-9\s,./-]+$/u;
         if (!validPattern.test(trimmedValue)) {
-          return "Address can only contain letters (including Vietnamese), numbers, single spaces, commas (,), hyphens (-), and slashes (/)";
+          return "Địa chỉ chỉ được chứa chữ cái (bao gồm tiếng Việt), số, khoảng trắng, dấu phẩy (,) và dấu gạch chéo (/)";
         }
         
         if (trimmedValue.length > 200) {
-          return "Address must be 200 characters or less";
+          return "Địa chỉ không được vượt quá 200 ký tự";
         }
         
         return null;
@@ -158,9 +159,9 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         });
 
         if (roleChanged) {
-          toast.success("User updated successfully. Email notification has been sent.");
+          toast.success("Cập nhật người dùng thành công. Email thông báo đã được gửi.");
         } else {
-          toast.success("User updated successfully");
+          toast.success("Cập nhật người dùng thành công");
         }
       } else {
         await createUser({
@@ -170,7 +171,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
           roleIds: values.roleId ? [parseInt(values.roleId)] : [],
         });
         toast.success(
-          "User created successfully! Login credentials have been sent to their email address."
+          "Tạo người dùng thành công! Thông tin đăng nhập đã được gửi đến địa chỉ email của họ."
         );
       }
 
@@ -189,11 +190,11 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
     <form onSubmit={form.onSubmit(handleSubmit)}>
       <div className="grid gap-4 py-4">
         <div className="grid gap-2">
-          <div>Name<span className="text-red-500">*</span></div>
+          <Label htmlFor="name">Tên</Label>
           <Input
             id="name"
             {...form.getInputProps("name")}
-            placeholder="John Doe"
+            placeholder="Nguyễn Văn A"
             maxLength={50}
             disabled={isUpdateMode}
           />
@@ -203,11 +204,12 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <div>Email<span className="text-red-500">*</span></div>
+          <Label htmlFor="email">Email</Label>
           <Input
             id="email"
             {...form.getInputProps("email")}
             placeholder="example@gmail.com"
+            type="email"
             disabled={isUpdateMode}
           />
           {form.errors.email && (
@@ -216,8 +218,10 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor="phone">Số điện thoại (tùy chọn)</Label>
           <Input
+            id="phone"
+            placeholder="+84987654321"
             onChange={(e) => form.setFieldValue("phone", e.target.value)}
             value={form.values.phone}
           />
@@ -227,11 +231,11 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="address">Address</Label>
+          <Label htmlFor="address">Địa chỉ (tùy chọn)</Label>
           <Textarea
             id="address"
             {...form.getInputProps("address")}
-            placeholder="Enter address"
+            placeholder="Nhập địa chỉ"
             className="resize-none" 
           />
           {form.errors.address && (
@@ -240,18 +244,18 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <div>Role<span className="text-red-500">*</span></div>
+          <Label htmlFor="roleId">Vai trò</Label>
           <Select
             value={form.values.roleId}
             onValueChange={(value: string) => form.setFieldValue("roleId", value)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select a role" />
+              <SelectValue placeholder="Chọn vai trò" />
             </SelectTrigger>
             <SelectContent>
               {roles.map((role) => (
                 <SelectItem key={role.id} value={role.id.toString()}>
-                  {role.name}
+                  {userRole[role.name]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -264,11 +268,11 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         <Button type="submit" disabled={loading}>
           {loading
             ? isUpdateMode
-              ? "Updating..."
-              : "Creating..."
+              ? "Đang cập nhật..."
+              : "Đang tạo..."
             : isUpdateMode
-            ? "Update User"
-            : "Create User"}
+            ? "Cập nhật"
+            : "Tạo người dùng"}
         </Button>
       </div>
     </form>

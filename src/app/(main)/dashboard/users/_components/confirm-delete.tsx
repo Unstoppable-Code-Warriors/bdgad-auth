@@ -21,9 +21,9 @@ const ConfirmDeleteUser = ({
 			await deleteUser({ id: row.original.id })
 			await queryClient.invalidateQueries({ queryKey: ["users"] })
 			dialog.closeAll()
-			toast.success("User deleted!")
+			toast.success("Người dùng đã được xóa!")
 		} catch (error) {
-			toast.error("Failed to delete user")
+			toast.error("Không thể xóa người dùng")
 		} finally {
 			setIsLoading(false)
 		}
@@ -31,7 +31,7 @@ const ConfirmDeleteUser = ({
 
 	return (
 		<div className="flex flex-col gap-4">
-			<p>Are you sure you want to delete this user? This action cannot be undone.</p>
+			<p>Bạn có chắc chắn muốn xóa người dùng này?</p>
 			<div className="flex justify-end gap-2">
 				<Button
 					type="button"
@@ -39,7 +39,7 @@ const ConfirmDeleteUser = ({
 					onClick={dialog.closeAll}
 					disabled={isLoading}
 				>
-					Cancel
+					Hủy bỏ
 				</Button>
 				<Button
 					type="button"
@@ -47,7 +47,7 @@ const ConfirmDeleteUser = ({
 					onClick={handleDelete}
 					disabled={isLoading}
 				>
-					{isLoading ? "Deleting..." : "Delete"}
+					{isLoading ? "Đang xóa..." : "Xóa"}
 				</Button>
 			</div>
 		</div>

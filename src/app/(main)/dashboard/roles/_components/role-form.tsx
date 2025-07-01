@@ -36,24 +36,18 @@ const RoleForm = ({
 
 		validate: {
 			name: (value) =>
-				value.trim().length > 0 ? null : "Name is required",
+				value.trim().length > 0 ? null : "Tên là bắt buộc",
 			description: (value) => {
 				const trimmedValue = value.trim();
-				if (trimmedValue.length === 0) return "Description is required";
+				if (trimmedValue.length === 0) return "Mô tả là bắt buộc";
 				
 				// Check for multiple spaces
 				if (/\s{2,}/.test(trimmedValue)) {
-					return "Description cannot contain multiple spaces between words";
-				}
-				
-				// Check for allowed characters: letters (including Vietnamese), numbers, spaces, and special characters
-				const validPattern = /^[a-zA-ZÀ-ỹ0-9\s\W]+$/u;
-				if (!validPattern.test(trimmedValue)) {
-					return "Description can only contain letters (including Vietnamese), numbers, single spaces, and special characters";
+					return "Mô tả không được chứa nhiều khoảng trắng liên tiếp";
 				}
 				
 				if (trimmedValue.length > 200) {
-					return "Description must be 200 characters or less";
+					return "Mô tả không được vượt quá 200 ký tự";
 				}
 				
 				return null;
@@ -79,14 +73,14 @@ const RoleForm = ({
 				await updateRole(roleData.id, {
 					description: values.description,
 				})
-				toast.success("Role updated successfully")
+				toast.success("Cập nhật vai trò thành công")
 			} else {
 				// Create role
 				await createRole({
 					name: values.name,
 					description: values.description,
 				})
-				toast.success("Role created successfully")
+				toast.success("Tạo vai trò thành công")
 			}
 
 			form.reset()
@@ -94,7 +88,7 @@ const RoleForm = ({
 			router.refresh()
 		} catch (error) {
 			console.error(error)
-			toast.error(`Failed to ${isUpdateMode ? "update" : "create"} role`)
+			toast.error(`Không thể ${isUpdateMode ? "cập nhật" : "tạo"} vai trò`)
 		} finally {
 			setLoading(false)
 		}
@@ -104,20 +98,20 @@ const RoleForm = ({
 		<form onSubmit={form.onSubmit(handleSubmit)}>
 			<div className="grid gap-4 py-4">
 				<div className="grid gap-2">
-					<Label htmlFor="name">Name</Label>
+					<Label htmlFor="name">Tên</Label>
 					<Input
 						id="name"
-						placeholder="Enter role name"
+						placeholder="Nhập tên vai trò"
 						{...form.getInputProps("name")}
 						key={form.key("name")}
 						disabled
 					/>
 				</div>
 				<div className="grid gap-2">
-					<Label htmlFor="description">Description</Label>
+					<Label htmlFor="description">Mô tả</Label>
 					<Textarea
 						id="description"
-						placeholder="Enter role description"
+						placeholder="Nhập mô tả vai trò"
 						{...form.getInputProps("description")}
 						key={form.key("description")}
 						className="resize-none"
@@ -129,11 +123,11 @@ const RoleForm = ({
 				<Button type="submit" disabled={loading}>
 					{loading
 						? isUpdateMode
-							? "Updating..."
-							: "Creating..."
+							? "Đang cập nhật..."
+							: "Đang tạo..."
 						: isUpdateMode
-						? "Submit"
-						: "Create Role"}
+						? "Gửi"
+						: "Tạo vai trò"}
 				</Button>
 			</div>
 		</form>

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { createHeader, DataTable } from "@/components/ui/datatable"
 import { GetRolesResult } from "@/lib/actions/roles"
-import { FetchLimit } from "@/lib/constants"
+import { FetchLimit, userRole } from "@/lib/constants"
 import { ColumnDef, Row } from "@tanstack/react-table"
 import { Plus } from "lucide-react"
 import { useDialog } from "@/hooks/use-dialog"
@@ -17,11 +17,16 @@ import { Label } from "@/components/ui/label"
 const columns: ColumnDef<GetRolesResult["roles"][0]>[] = [
 	{
 		accessorKey: "name",
-		header: createHeader("Name"),
+		header: createHeader("Tên"),
+		cell: ({ row }) => (
+			<div  title={row.original.name}>
+				{userRole[row.original.name]}
+			</div>
+		),
 	},
 	{
 		accessorKey: "description",
-		header: createHeader("Description"),
+		header: createHeader("Mô tả"),
 		cell: ({ row }) => (
 			<div className="max-w-[600px] truncate" title={row.original.description}>
 				{row.original.description}
@@ -35,7 +40,7 @@ const RolesActions = () => {
 
 	const openAddRoleModal = () => {
 		dialog.open({
-			title: "Add New Role",
+			title: "Thêm vai trò mới",
 			children: <RoleForm action="create" />,
 			size: "md",
 		})
@@ -56,22 +61,22 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
 
 	const openEditRoleModal = () => {
 		dialog.open({
-			title: "Edit Role",
+			title: "Cập nhật vai trò",
 			children: <RoleForm action="update" row={row} />,
 		})
 	}
 
 	const openViewDetailModal = () => {
 		dialog.open({
-			title: "Role Details",
+			title: "Chi tiết vai trò",
 			children: (
 				<div className="grid gap-4 py-4">
 					<div className="grid gap-2">
-						<Label>Name</Label>
+						<Label>Tên</Label>
 						<div className="text-sm">{row.original.name}</div>
 					</div>
 					<div className="grid gap-2">
-						<Label>Description</Label>
+						<Label>Mô tả</Label>
 						<div className="text-sm max-h-[300px] overflow-y-auto">
 							{row.original.description}
 						</div>
@@ -84,10 +89,10 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
 	return (
 		<DropdownMenu>
 				<DropdownMenuItem onClick={openViewDetailModal}>
-					View Detail
+					Xem chi tiết
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={openEditRoleModal}>
-					Edit Description
+					Cập nhật mô tả
 				</DropdownMenuItem>
 		</DropdownMenu>
 	)

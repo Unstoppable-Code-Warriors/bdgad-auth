@@ -21,30 +21,30 @@ const ConfirmDeleteRole = ({
 			await deleteRole(row.original.id)
 			router.refresh()
 			dialog.closeAll()
-			toast.success("Role deleted!")
+			toast.success("Xóa vai trò thành công!")
 		} catch (error) {
-			toast.error("Failed to delete role")
+			toast.error("Không thể xóa vai trò")
 		} finally {
 			setIsLoading(false)
 		}
 	}
 	return (
 		<div className="flex flex-col gap-4">
-			<p>Are you sure you want to delete this role?</p>
+			<p>Bạn có chắc chắn muốn xóa vai trò này?</p>
 			<div className="flex justify-end gap-2">
 				<Button
 					variant="outline"
 					onClick={dialog.closeAll}
 					disabled={isLoading}
 				>
-					Cancel
+					Hủy
 				</Button>
 				<Button
 					variant="destructive"
 					onClick={handleDelete}
 					disabled={isLoading}
 				>
-					Delete
+					Xóa
 				</Button>
 			</div>
 		</div>

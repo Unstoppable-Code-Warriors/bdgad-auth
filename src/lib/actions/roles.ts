@@ -107,11 +107,6 @@ const updateRoleCore = async (
 			throw new Error("Description must not exceed 200 characters");
 		}
 
-		// Allow letters (including Vietnamese), numbers, spaces, and special characters
-		if (!/^[a-zA-ZÀ-ỹ0-9\s\(\)\|\/\-\,\.]+$/.test(data.description)) {
-			throw new Error("Description can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: ( ) | / - , .");
-		}
-
 		const [updatedRole] = await db
 			.update(roles)
 			.set(data)

@@ -27,23 +27,23 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
       reason: "",
     },
     validate: {
-      reason: (value: string) => {
+      reason: (value) => {
         const trimmedValue = value.trim();
-        if (!trimmedValue) return "Reason is required";
+        if (!trimmedValue) return "Lý do là bắt buộc";
         
         // Check for multiple spaces
         if (/\s{2,}/.test(trimmedValue)) {
-          return "Reason cannot contain multiple spaces between words";
+          return "Lý do không được chứa nhiều khoảng trắng giữa các từ";  
         }
         
         // Check for allowed characters
         const validPattern = /^[a-zA-ZÀ-ỹ0-9\s.,]+$/u;
         if (!validPattern.test(trimmedValue)) {
-          return "Reason can only contain letters (including Vietnamese), numbers, single spaces, periods (.), and commas (,)";
+          return "Lý do chỉ được chứa các chữ cái (bao gồm tiếng Việt), số, khoảng trắng, dấu chấm (.) và dấu phẩy (,)";
         }
         
         if (trimmedValue.length > 200 || trimmedValue.length < 50) {
-          return "Reason must be 50 characters or more and 200 characters or less";
+          return "Lý do phải có từ 50 ký tự trở lên và không quá 200 ký tự";
         }
         
         return null;
@@ -63,23 +63,23 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
       if (isActive) {
         const result = await sendBanNotification(user.email, user.name, values.reason.trim());
         if (result.success) {
-          toast.success(`User has been banned and notification email has been sent.`);
+          toast.success(`Tài khoản đã bị tạm ngừng và email thông báo đã được gửi.`);
         } else {
-          toast.success(`User has been banned, but failed to send notification email.`);
+          toast.success(`Tài khoản đã bị tạm ngừng, nhưng không thể gửi email thông báo.`);
         }
       } else {
         const result = await sendUnbanNotification(user.email, user.name, values.reason.trim());
         if (result.success) {
-          toast.success(`User has been unbanned and notification email has been sent.`);
+          toast.success(`Tài khoản đã được khôi phục và email thông báo đã được gửi.`);
         } else {
-          toast.success(`User has been unbanned, but failed to send notification email.`);
+          toast.success(`Tài khoản đã được khôi phục.`);
         }
       }
 
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       onClose();
     } catch (error) {
-      toast.error(`Failed to ${isActive ? "ban" : "unban"} user`);
+      toast.error(`Không thể ${isActive ? "tạm ngừng" : "khôi phục"} tài khoản`);
     } finally {
       setIsLoading(false);
     }
@@ -88,18 +88,18 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
   return (
     <form onSubmit={form.onSubmit(handleAction)} className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Are you sure you want to {isActive ? "ban" : "unban"} {user.name}? 
+        Bạn có chắc chắn muốn {isActive ? "tạm ngừng" : "khôi phục"} tài khoản {user.name}? 
         {isActive 
-          ? " This will prevent them from accessing the system and they will be notified via email."
-          : " This will restore their access to the system and they will be notified via email."}
+          ? " Người dùng sẽ không thể truy cập hệ thống và sẽ nhận được email thông báo."
+          : " Người dùng sẽ được khôi phục quyền truy cập hệ thống và sẽ nhận được email thông báo."}
       </p>
 
       <div className="grid gap-2">
-        <Label htmlFor="reason">Reason<span className="text-red-500">*</span></Label>
+        <Label htmlFor="reason">Lý do<span className="text-red-500">*</span></Label>
         <Textarea
           id="reason"
           {...form.getInputProps("reason")}
-          placeholder={`Enter reason for ${isActive ? "banning" : "unbanning"} this user`}
+          placeholder={`Nhập lý do ${isActive ? "tạm ngừng" : "khôi phục"} tài khoản này`}
           className="resize-none"
           disabled={isLoading}
         />
@@ -110,10 +110,10 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onClose} disabled={isLoading}>
-          Cancel
+          Hủy bỏ
         </Button>
         <Button variant={isActive ? "destructive" : "default"} type="submit" disabled={isLoading}>
-          {isActive ? "Ban User" : "Unban User"}
+          {isActive ? "Tạm ngừng tài khoản" : "Khôi phục tài khoản"}
           {isLoading && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
       </div>

@@ -1,12 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { createHeader, DataTable } from "@/components/ui/datatable";
+import { DataTable } from "@/components/ui/datatable";
 import { GetUsersResult } from "@/lib/actions/users";
-import { FetchLimit } from "@/lib/constants";
+import { userRole, userStatus } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Download, FileDown, Plus, Ban, Trash2, Eye, Pencil, Lock, FileUp, LockIcon, LockOpen } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Ban, Trash2, Eye, Pencil, Lock, FileUp, LockOpen } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import ConfirmDeleteUser from "./confirm-delete";
@@ -17,21 +17,19 @@ import ImportExcelForm from "./import-excel-form";
 import ConfirmResetPassword from "./confirm-reset-password";
 import UserDetailModal from "./user-detail-modal";
 import ConfirmBan from "./confirm-ban";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "@/lib/actions/users";
-
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { format } from "date-fns";
-import { ImportDataTable } from "./import-data-table";
+import { formatDate } from "@/lib/utils";
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "name",
-    header: "Name",
+    header: "Tên",
     cell: ({ row }) => (
-      <div className="max-w-[120px] truncate" title={row.original.name}>
+      <div className="max-w-[100px] truncate" title={row.original.name}>
         {row.original.name}
       </div>
     ),
@@ -40,36 +38,26 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <div className="max-w-[170px] truncate" title={row.original.email}>
+      <div className="max-w-[160px] truncate" title={row.original.email}>
         {row.original.email}
       </div>
     ),
   },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        variant={row.original.status === "active" ? "default" : "secondary"}
-      >
-        {row.original.status}
-      </Badge>
-    ),
-  },
+  
   {
     accessorKey: "roles",
-    header: "Role",
+    header: "Vai trò",
     cell: ({ row }) => (
-      <div className="flex gap-1 max-w-[70px]">
+      <div className="flex gap-1 max-w-[100px]">
         {row.original.roles.map((role) => (
-          <Badge key={role.id}>{role.name}</Badge>
+          <Badge key={role.id}>{userRole[role.name]}</Badge>
         ))}
       </div>
     ),
   },
   {
     accessorKey: "phone",
-    header: "Phone",
+    header: "Số điện thoại",
     cell: ({ row }) => (
       <div className="max-w-[100px] truncate" title={(row.original?.metadata as Record<string, string>)?.["phone"] || "-"}>
         {(row.original?.metadata as Record<string, string>)?.["phone"] || "-"}
@@ -78,7 +66,7 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   },
   {
     accessorKey: "address",
-    header: "Address",
+    header: "Địa chỉ",
     cell: ({ row }) => (
       <div className="max-w-[100px] truncate" title={(row.original?.metadata as Record<string, string>)?.["address"] || "-"}>
         {(row.original?.metadata as Record<string, string>)?.["address"] || "-"}
@@ -87,13 +75,27 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: "Created At",
-    cell: ({ row }) => (
-      <div>
-        <div className="max-w-[90px]">
-          {format(new Date(row.original.createdAt), "PPP")}
+    header: "Ngày tạo",
+    cell: ({ row }) => {
+      return (
+        <div>
+          <div className="max-w-[10px]">
+            {formatDate(new Date(row.original.createdAt))}
+          </div>
         </div>
-      </div>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Trạng thái",
+    cell: ({ row }) => (
+      <Badge
+        variant={row.original.status === "active" ? "default" : "destructive"}
+        className={row.original.status === "active" ? "bg-green-600 text-white" : ""}
+      >
+        {userStatus[row.original.status]}
+      </Badge>
     ),
   },
 ];
@@ -110,33 +112,9 @@ const UsersActions = ({
 
   const openAddUserModal = () => {
     dialog.open({
-      title: "Add New User",
+      title: "Thêm tài khoản mới",
       children: <UserForm users={users} action="create" roles={roles} />,
       size: "md",
-    });
-  };
-
-  // const downloadTemplateModal = () => {
-  //   const link = document.createElement("a");
-  //   link.href = "/templates/account_creation_template.xlsx";
-  //   link.download = "account_creation_template.xlsx";
-  //   link.click();
-  // };
-
-  const hanldeImportExcel = (
-    users: GetUsersResult["users"],
-    roles: GetRolesResult["roles"]
-  ) => {
-    dialog.open({
-      title: "Import Excel",
-      children: (
-        <ImportExcelForm
-          users={users}
-          roles={roles}
-          closeModal={() => dialog.closeAll()}
-        />
-      ),
-      size: "xl",
     });
   };
 
@@ -146,21 +124,13 @@ const UsersActions = ({
 
   return (
     <div className="flex items-center gap-4">
-      {/* <Button variant="outline" onClick={downloadTemplateModal}>
-        <FileDown className="h-4 w-4 mr-2" />
-        Download Template
-      </Button> */}
-      {/* <Button variant="outline" onClick={() => hanldeImportExcel(users, roles)}>
-        <FileUp className="h-4 w-4 mr-2" />
-        Import excel
-      </Button> */}
        <Button variant="outline" onClick={handleImportUsers}>
         <FileUp className="h-4 w-4 mr-2" />
-        Import excel
+        Nhập Excel
       </Button>
       <Button variant="outline" onClick={openAddUserModal}>
         <Plus className="h-4 w-4 mr-2" />
-        Add New
+        Tạo tài khoản
       </Button>
     </div>
   );
@@ -179,21 +149,21 @@ const ActionsMenu = ({
 
   const openEditUserModal = () => {
     dialog.open({
-      title: "Edit User",
+      title: "Cập nhật tài khoản",
       children: <UserForm action="update" row={row} roles={roles} users={users} />,
     });
   };
 
   const openConfirmDeleteDialog = () => {
     dialog.open({
-      title: "Delete User",
+      title: "Xóa tài khoản",
       children: <ConfirmDeleteUser row={row} />,
     });
   };
 
   const openConfirmResetPasswordDialog = () => {
     dialog.open({
-      title: "Reset Password",
+      title: "Đặt lại mật khẩu",
       children: (
         <ConfirmResetPassword row={row} closeModal={() => dialog.closeAll()} />
       ),
@@ -202,14 +172,14 @@ const ActionsMenu = ({
 
   const openUserDetailModal = () => {
     dialog.open({
-      title: "User Details",
+      title: "Chi tiết tài khoản",
       children: <UserDetailModal row={row} />,
     });
   };
 
   const openBanUserDialog = () => {
     dialog.open({
-      title: row.original.status === "active" ? "Ban User" : "Unban User",
+      title: row.original.status === "active" ? "Tạm ngừng tài khoản" : "Bỏ tạm ngừng tài khoản",
       children: <ConfirmBan onClose={() => dialog.closeAll()} row={row} />,
       onClose: () => dialog.closeAll(),
     });
@@ -220,30 +190,30 @@ const ActionsMenu = ({
       <DropdownMenuItem onClick={openUserDetailModal}>
        <div className="flex items-center gap-1">
        <Eye className="mr-2 h-4 w-4" />
-       View Detail
+       Xem chi tiết
        </div>
       </DropdownMenuItem>
       <DropdownMenuItem disabled={row.original.status === "inactive"} onClick={openEditUserModal}>
         <div className="flex items-center gap-1">
           <Pencil className="mr-2 h-4 w-4" />
-          Edit
+          Cập nhật
         </div>
       </DropdownMenuItem>
       <DropdownMenuItem disabled={row.original.status === "inactive"} onClick={openConfirmResetPasswordDialog}>
         <div className="flex items-center gap-1">
           <Lock className="mr-2 h-4 w-4" />
-          Reset Password
+          Đặt lại mật khẩu
         </div>
       </DropdownMenuItem>
       {row.original.status === "active" ? (
         <DropdownMenuItem onClick={openBanUserDialog}>
           <Ban className="mr-2 h-4 w-4" />
-          Ban User
+          Tạm ngừng tài khoản
         </DropdownMenuItem>
       ) : (
         <DropdownMenuItem onClick={openBanUserDialog}>
           <LockOpen className="mr-2 h-4 w-4" />
-          Unban User
+          Bỏ tạm ngừng tài khoản
         </DropdownMenuItem>
       )}
       <DropdownMenuItem
@@ -251,7 +221,7 @@ const ActionsMenu = ({
         disabled={row.original.status === "active"}
       >
         <Trash2 className="mr-2 h-4 w-4" />
-        Delete
+        Xóa tài khoản
       </DropdownMenuItem>
     </>
   );
@@ -275,7 +245,6 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function UsersTable() {
-  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
@@ -336,7 +305,7 @@ export function UsersTable() {
         <AlertDescription>
           {error instanceof Error
             ? error.message
-            : "An error occurred while loading data"}
+            : "Đã xảy ra lỗi khi tải dữ liệu"}
         </AlertDescription>
       </Alert>
     );
@@ -350,7 +319,7 @@ export function UsersTable() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
-          Total: {total} {total === 1 ? 'user' : 'users'}
+          Tổng: {total} {total === 1 ? 'tài khoản' : 'tài khoản'}
         </div>
       </div>
       <DataTable
@@ -362,7 +331,7 @@ export function UsersTable() {
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         searchKey="email"
-        searchPlaceholder="Search by email..."
+        searchPlaceholder="Tìm kiếm theo email..."
         enableFiltering={true}
         onSearch={handleSearch}
         searchValue={search}

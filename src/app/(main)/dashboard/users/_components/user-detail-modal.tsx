@@ -4,6 +4,8 @@ import { Row } from "@tanstack/react-table";
 import { GetUsersResult } from "@/lib/actions/users";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { userRole, userStatus } from "@/lib/constants";
+import { formatDate } from "@/lib/utils";
 
 interface UserDetailModalProps {
   row: Row<GetUsersResult["users"][0]>;
@@ -17,7 +19,7 @@ const UserDetailModal = ({ row }: UserDetailModalProps) => {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Name</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Tên</h3>
           <p className="mt-1">{user.name}</p>
         </div>
         <div>
@@ -25,41 +27,43 @@ const UserDetailModal = ({ row }: UserDetailModalProps) => {
           <p className="mt-1">{user.email}</p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Trạng thái</h3>
           <p className="mt-1">
-            <Badge variant={user.status === "active" ? "default" : "secondary"}>
-              {user.status}
+            <Badge variant={row.original.status === "active" ? "default" : "destructive"}
+        className={row.original.status === "active" ? "bg-green-600 text-white" : ""}>
+              {userStatus[user.status]}
             </Badge>
+
           </p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Role</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Vai trò</h3>
           <p className="mt-1">
             {user.roles.map((role) => (
               <Badge key={role.id} className="mr-1">
-                {role.name}
+                {userRole[role.name]}
               </Badge>
             ))}
           </p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Phone</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Số điện thoại</h3>
           <p className="mt-1">{metadata.phone || "-"}</p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Address</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Địa chỉ</h3>
           <p className="mt-1">{metadata.address || "-"}</p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Created At</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Ngày tạo</h3>
           <p className="mt-1">
-            {format(new Date(user.createdAt), "PPP p")}
+            {formatDate(new Date(user.createdAt), true)}
           </p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Last Updated</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Ngày cập nhật</h3>
           <p className="mt-1">
-            {format(new Date(user.updatedAt), "PPP p")}
+            {formatDate(new Date(user.updatedAt), true)}
           </p>
         </div>
       </div>

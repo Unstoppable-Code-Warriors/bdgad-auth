@@ -43,25 +43,25 @@ export default function ImportUsersPage() {
           onClick={() => router.push("/dashboard/users")}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to users
+          Quay lại danh sách tài khoản
         </Button>
       </div>
       <div className="flex items-center justify-between gap-4">
         
      <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold">Import Excel</h1>
+        <h1 className="text-2xl font-bold">Nhập Excel</h1>
 
      </div>
 
         <Button variant="outline" onClick={downloadTemplateModal}>
         <FileDown className="h-4 w-4 mr-2" />
-        Download Template
+        Tải xuống mẫu
       </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Create users from file excel</CardTitle>
+          <CardTitle>Tạo tài khoản từ file excel</CardTitle>
         </CardHeader>
         <CardContent>
           <ImportDataTable users={usersData?.users || []} roles={rolesData?.roles || []} />

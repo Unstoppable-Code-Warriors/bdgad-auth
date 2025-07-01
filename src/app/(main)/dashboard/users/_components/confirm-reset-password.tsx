@@ -35,9 +35,9 @@ const ConfirmResetPassword = ({ row, closeModal }: ConfirmResetPasswordProps) =>
       }
 
       closeModal();
-      toast.success("Password reset email has been sent to the user.");
+      toast.success("Email khôi phục mật khẩu đã được gửi đến người dùng.");
     } catch (error) {
-      toast.error("Failed to reset password");
+      toast.error("Không thể khôi phục mật khẩu");
     } finally {
       setIsLoading(false);
     }
@@ -46,9 +46,8 @@ const ConfirmResetPassword = ({ row, closeModal }: ConfirmResetPasswordProps) =>
   return (
     <div className="space-y-4">
       <p>
-        Are you sure you want to reset the password for{" "}
-        <span className="font-semibold">{row.original.name}</span>? A password
-        reset link will be sent to their email address.
+        Bạn có chắc chắn muốn khôi phục mật khẩu cho{" "}
+        <span className="font-semibold">{row.original.name}</span>? Liên kết khôi phục mật khẩu sẽ được gửi đến địa chỉ email của họ.
       </p>
       <div className="flex justify-end gap-2">
         <Button
@@ -56,10 +55,10 @@ const ConfirmResetPassword = ({ row, closeModal }: ConfirmResetPasswordProps) =>
           onClick={() => closeModal()}
           disabled={isLoading}
         >
-          Cancel
+          Hủy bỏ
         </Button>
         <Button onClick={handleResetPassword} disabled={isLoading}>
-          {isLoading ? "Sending..." : "Reset Password"}
+          {isLoading ? "Đang gửi..." : "Khôi phục mật khẩu"}
         </Button>
       </div>
     </div>

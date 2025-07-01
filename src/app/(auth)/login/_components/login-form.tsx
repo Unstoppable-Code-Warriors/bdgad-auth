@@ -67,7 +67,7 @@ export function LoginForm() {
 	return (
 		<div className="space-y-6">
 			<div className="space-y-2 text-center">
-				<h1 className="text-2xl font-semibold tracking-tight">Chào mừng trở lại</h1>
+				<h1 className="text-2xl font-semibold tracking-tight">Admin Page</h1>
 				<p className="text-sm text-muted-foreground">
 					Nhập thông tin để truy cập tài khoản của bạn
 				</p>
@@ -98,7 +98,7 @@ export function LoginForm() {
 						name="password"
 						render={({ field }: { field: any }) => (
 							<FormItem>
-								<FormLabel>Password</FormLabel>
+								<FormLabel>Mật khẩu</FormLabel>
 								<FormControl>
 									<Input
 										placeholder="Nhập mật khẩu của bạn"

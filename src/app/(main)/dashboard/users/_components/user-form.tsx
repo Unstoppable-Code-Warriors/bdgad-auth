@@ -190,7 +190,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
     <form onSubmit={form.onSubmit(handleSubmit)}>
       <div className="grid gap-4 py-4">
         <div className="grid gap-2">
-          <Label htmlFor="name">Tên</Label>
+          <div>Tên <span className="text-red-500">*</span></div>
           <Input
             id="name"
             {...form.getInputProps("name")}
@@ -204,7 +204,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
+          <div>Email <span className="text-red-500">*</span></div>
           <Input
             id="email"
             {...form.getInputProps("email")}
@@ -244,7 +244,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="roleId">Vai trò</Label>
+          <div>Vai trò <span className="text-red-500">*</span></div>
           <Select
             value={form.values.roleId}
             onValueChange={(value: string) => form.setFieldValue("roleId", value)}

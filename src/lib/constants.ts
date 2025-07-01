@@ -18,6 +18,24 @@ export const userRole: Record<string, string> = {
   Doctor: "Bác sĩ",
 };
 
+export const columnNames: Record<string, string> = {
+  email: "Email",
+  name: "Tên",
+  roles: "Vai trò",
+  phone: "Số điện thoại",
+  address: "Địa chỉ",
+  status: "Trạng thái",
+  createdAt: "Ngày tạo",
+  description: "Mô tả",
+  Email: "Email",
+  Name: "Tên",
+  Role: "Vai trò",
+  Phone: "Số điện thoại",
+  Address: "Địa chỉ",
+  Status: "Trạng thái",
+  CreatedAt: "Ngày tạo",
+};
+
 export enum FetchLimit {
   USERS = 100,
   ROLES = 15,

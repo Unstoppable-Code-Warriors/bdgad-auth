@@ -56,7 +56,7 @@ export function NavUser({ session }: { session: Session }) {
 								{session.user.email}
 							</span>
 							<Badge variant="secondary" className="text-xs w-fit">
-								System Admin
+								Quản trị hệ thống
 							</Badge>
 						</div>
 					</div>
@@ -67,7 +67,7 @@ export function NavUser({ session }: { session: Session }) {
 					className="cursor-pointer"
 				>
 					<LogOut className="h-4 w-4 mr-2" />
-					Log out
+					Đăng xuất
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

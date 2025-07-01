@@ -1,6 +1,7 @@
 // utils/validate-data-excel.ts
 
 import * as XLSX from "xlsx";
+import { columnNames } from "../constants";
 // Types
 export type ValidationResult = {
   isValid: boolean;
@@ -35,7 +36,7 @@ export const validateWorksheetExists = (
   if (!worksheet) {
     return {
       isValid: false,
-      error: `Cannot find sheet named "${sheetName}". Please use the correct template.`,
+      error: `Không tìm thấy sheet có tên "${sheetName}". Vui lòng sử dụng template đúng.`,
     };
   }
   return { isValid: true };
@@ -45,7 +46,7 @@ export const validateDataNotEmpty = (jsonData: any[]): ValidationResult => {
   if (!jsonData || jsonData.length === 0) {
     return {
       isValid: false,
-      error: "Excel file is empty or has no data rows.",
+      error: "File Excel trống hoặc không có dữ liệu.",
     };
   }
   return { isValid: true };
@@ -67,9 +68,10 @@ export const validateColumns = (
     (col) => !actualColumns.includes(col)
   );
   if (missingRequiredColumns.length > 0) {
+    const missingColumns = missingRequiredColumns.map((col) => columnNames[col as keyof typeof columnNames]);
     return {
       isValid: false,
-      error: `Missing required column(s): ${missingRequiredColumns.join(", ")}. The value in the missing column will appear as empty in the preview data table.`,
+      error: `Thiếu cột bắt buộc: ${missingColumns.join(", ")}. Giá trị trong cột thiếu sẽ hiển thị là trống trong bảng dữ liệu đã nhập.`,
     };
   }
 
@@ -81,7 +83,7 @@ export const validateColumns = (
   if (extraColumns.length > 0) {
     return{
       isValid: false,
-      error: `Extra column(s) found: ${extraColumns.join(", ")}. These columns will be ignored.`,
+      error: `Cột thừa: ${extraColumns.join(", ")}. Các cột này sẽ bị bỏ qua.`,
     }
   }
 
@@ -90,9 +92,10 @@ export const validateColumns = (
     (col, index) => actualColumns.indexOf(col) !== index
   );
   if (duplicateColumns.length > 0) {
+    const duplicateColumnsNames = duplicateColumns.map((col) => columnNames[col as keyof typeof columnNames]);
     return {
       isValid: false,
-      error: `Duplicate column(s) found: ${duplicateColumns.join(", ")}. The system will take the value of the first occurrence of the column.`,
+      error: `Cột trùng lặp: ${duplicateColumnsNames.join(", ")}. Hệ thống sẽ lấy giá trị của cột xuất hiện đầu tiên.`,
     };
   }
 
@@ -103,24 +106,24 @@ export const validateColumns = (
 // Field validation functions
 export const validateName = (name: string): ValidationResult => {
   if (!name || typeof name !== "string") {
-    return { isValid: false, error: "Name is required and must be text" };
+    return { isValid: false, error: "Tên là bắt buộc và phải là văn bản" };
   }
   const trimmedName = name.trim();
   if (trimmedName.length < 3 || trimmedName.length > 50) {
     return {
       isValid: false,
-      error: "Name must be between 3-50 characters",
+      error: "Tên phải có từ 3-50 ký tự",
     };
   }
   // Check for multiple consecutive spaces
   if (/\s{2,}/.test(trimmedName)) {
-    return { isValid: false, error: "Name cannot contain multiple consecutive spaces" };
+    return { isValid: false, error: "Tên không được chứa nhiều khoảng trắng liên tiếp" };
   }
   // Allow only letters (including Vietnamese) and single spaces
   if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
     return {
       isValid: false,
-      error: "Name can only contain letters (including Vietnamese) and single spaces between words",
+      error: "Tên chỉ được chứa chữ cái (bao gồm tiếng Việt) và khoảng trắng giữa các từ",
     };
   }
   return { isValid: true };
@@ -128,18 +131,18 @@ export const validateName = (name: string): ValidationResult => {
 
 export const validateEmail = (email: string): ValidationResult => {
   if (!email || typeof email !== "string") {
-    return { isValid: false, error: "Email is required" };
+    return { isValid: false, error: "Email là bắt buộc" };
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email.trim())) {
-    return { isValid: false, error: "Invalid email format" };
+    return { isValid: false, error: "Định dạng email không hợp lệ" };
   }
   return { isValid: true };
 };
 
 export const validateRole = (role: any): ValidationResult => {
   if (role === null || role === undefined || role === "") {
-    return { isValid: false, error: "Role is required" };
+    return { isValid: false, error: "Vai trò là bắt buộc" };
   }
   const roleNum = Number(role);
   if (
@@ -150,7 +153,7 @@ export const validateRole = (role: any): ValidationResult => {
   ) {
     return {
       isValid: false,
-      error: "Role must be a number between 1 and 5",
+      error: "Vai trò phải là một số từ 1 đến 5",
     };
   }
   return { isValid: true };
@@ -167,7 +170,7 @@ export const validatePhone = (phone: string): ValidationResult => {
   if (!/^\d{10}$/.test(phoneStr)) {
     return {
       isValid: false,
-      error: "Phone number must be exactly 10 digits",
+      error: "Số điện thoại phải có đúng 10 chữ số",
     };
   }
   return { isValid: true };
@@ -183,7 +186,7 @@ export const validateAddress = (address: string): ValidationResult => {
   if (addressStr.length > 200) {
     return {
       isValid: false,
-      error: "Address must not exceed 200 characters",
+      error: "Địa chỉ không được vượt quá 200 ký tự",
     };
   }
   
@@ -191,7 +194,7 @@ export const validateAddress = (address: string): ValidationResult => {
   if (!/^[a-zA-ZÀ-ỹ0-9\s\(\)\|\/\-\,\.]+$/.test(addressStr)) {
     return {
       isValid: false,
-      error: "Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: ( ) | / - , .",
+      error: "Địa chỉ chỉ được chứa chữ cái (bao gồm tiếng Việt), số, khoảng trắng và các ký tự đặc biệt sau: ( ) | / - , .",
     };
   }
   return { isValid: true };
@@ -321,7 +324,7 @@ export const validateAccountLimit = (
   if (processedData.length > MAX_ACCOUNTS_LIMIT) {
     return {
       isValid: false,
-      error: `Too many accounts: ${processedData.length}. Maximum allowed is ${MAX_ACCOUNTS_LIMIT} accounts.`,
+      error: `Quá nhiều tài khoản: ${processedData.length}. Số tài khoản tối đa cho phép là ${MAX_ACCOUNTS_LIMIT}.`,
     };
   }
   return { isValid: true };
@@ -350,7 +353,7 @@ export const validateDuplicateEmail = (
   if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `Duplicate emails found in rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")}`,
+      error: `Email trùng lặp trong các dòng: ${duplicatedRows.sort((a, b) => a - b).join(", ")}`,
     };
   }
   return { isValid: true };
@@ -382,7 +385,7 @@ export const validateDuplicatePhone = (
   if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `Duplicate phone numbers found in rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")}`,
+      error: `Số điện thoại trùng lặp trong các dòng: ${duplicatedRows.sort((a, b) => a - b).join(", ")}`,
     };
   }
   return { isValid: true };
@@ -395,7 +398,7 @@ export const validateNoDataAfterProcessing = (
     return {
       isValid: false,
       error:
-        "No valid data found. Please check your Excel file format and content.",
+        "Không tìm thấy dữ liệu hợp lệ. Vui lòng kiểm tra định dạng và nội dung của file Excel.",
     };
   }
   return { isValid: true };
@@ -417,7 +420,7 @@ export const validateEmailNotExistInSystem = (
   if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `The following emails already exist in the system (rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")})`,
+      error: `Các email sau đã tồn tại trong hệ thống (dòng: ${duplicatedRows.sort((a, b) => a - b).join(", ")})`,
     };
   }
   return { isValid: true };
@@ -444,7 +447,7 @@ export const validatePhoneNotExistInSystem = (
   if (duplicatedRows.length > 0) {
     return {
       isValid: false,
-      error: `The following phone numbers already exist in the system (rows: ${duplicatedRows.sort((a, b) => a - b).join(", ")})`,
+      error: `Các số điện thoại sau đã tồn tại trong hệ thống (dòng: ${duplicatedRows.sort((a, b) => a - b).join(", ")})`,
     };
   }
   return { isValid: true };
@@ -454,8 +457,8 @@ export const validatePhoneNotExistInSystem = (
 export const formatValidationErrors = (errors: string[]): string => {
   const errorMessage = errors.slice(0, 5).join("\n"); // Show first 5 errors
   const remainingErrors =
-    errors.length > 5 ? `\n... and ${errors.length - 5} more errors` : "";
-  return `Validation errors found:\n${errorMessage}${remainingErrors}`;
+    errors.length > 5 ? `\n... và ${errors.length - 5} lỗi khác` : "";
+  return `Lỗi kiểm tra dữ liệu:\n${errorMessage}${remainingErrors}`;
 };
 
 export const validateRoleExcel = (jsonData: any[]): ValidationResult => {
@@ -486,7 +489,7 @@ export const validateRoleExcel = (jsonData: any[]): ValidationResult => {
   if (invalidRoles.length > 0) {
     return {
       isValid: false,
-      error: `Role must be a number between 1 and 5.`,
+      error: `Vai trò phải là một số từ 1 đến 5.`,
     };
   }
 

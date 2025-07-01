@@ -37,6 +37,7 @@ import {
 import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
 import { ReactNode, useMemo, useState } from "react";
+import { columnNames } from "@/lib/constants";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -314,7 +315,7 @@ export function DataTable<TData, TValue>({
                           column.toggleVisibility(!!value)
                         }
                       >
-                        {column.id}
+                        {columnNames[column.id] || column.id}
                       </DropdownMenuCheckboxItem>
                     );
                   })}

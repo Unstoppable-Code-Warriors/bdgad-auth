@@ -61,7 +61,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
           return "Tên chỉ được chứa chữ cái (bao gồm tiếng Việt) và khoảng trắng giữa các từ";
         }
       
-        if (trimmedValue.length > 50) return "Tên không được vượt quá 50 ký tự";
+        if (trimmedValue.length > 50 || trimmedValue.length < 3) return "Tên không được vượt quá 50 ký tự và phải có ít nhất 3 ký tự";
       
         return null;
       },
@@ -180,7 +180,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
       dialog.closeAll();
     } catch (error) {
       console.error(error);
-        toast.error("Failed to create user");
+      toast.error("Lỗi khi tạo người dùng");
       } finally {
       setLoading(false);
     }

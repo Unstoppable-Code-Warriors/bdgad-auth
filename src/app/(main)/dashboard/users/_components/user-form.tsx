@@ -126,8 +126,8 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
           return "Địa chỉ chỉ được chứa chữ cái (bao gồm tiếng Việt), số, khoảng trắng, dấu phẩy (,) và dấu gạch chéo (/)";
         }
         
-        if (trimmedValue.length > 200) {
-          return "Địa chỉ không được vượt quá 200 ký tự";
+        if (trimmedValue.length > 200 || trimmedValue.length < 3) {
+          return "Địa chỉ không được vượt quá 200 ký tự và phải có ít nhất 3 ký tự";
         }
         
         return null;

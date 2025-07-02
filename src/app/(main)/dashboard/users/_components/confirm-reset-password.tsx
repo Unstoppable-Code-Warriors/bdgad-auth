@@ -37,7 +37,7 @@ const ConfirmResetPassword = ({ row, closeModal }: ConfirmResetPasswordProps) =>
       closeModal();
       toast.success("Email khôi phục mật khẩu đã được gửi đến người dùng.");
     } catch (error) {
-      toast.error("Không thể khôi phục mật khẩu");
+      toast.error("Lỗi khi khôi phục mật khẩu");
     } finally {
       setIsLoading(false);
     }

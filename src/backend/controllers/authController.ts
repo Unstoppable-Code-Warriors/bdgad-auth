@@ -18,7 +18,6 @@ import {
 	sendPasswordResetEmail,
 	sendPasswordResetConfirmationEmail,
 } from "../utils/emailService"
-import { errorResponses } from "../utils/errorResponses"
 import crypto from "crypto"
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key"
@@ -37,14 +36,20 @@ export const login = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (user.length === 0) {
-			return c.json(errorResponses.invalidCredentials)
+			return c.json({
+				error: "INVALID_CREDENTIALS",
+				message: "Thông tin đăng nhập không chính xác"
+			}, 401)
 		}
 
 		const foundUser = user[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json(errorResponses.accountInactive)
+			return c.json({
+				error: "ACCOUNT_INACTIVE",
+				message: "Tài khoản chưa được kích hoạt"
+			}, 401)
 		}
 
 		// Verify password
@@ -53,7 +58,10 @@ export const login = async (c: ValidatedContext) => {
 			foundUser.password
 		)
 		if (!isPasswordValid) {
-			return c.json(errorResponses.invalidCredentials)
+			return c.json({
+				error: "INVALID_CREDENTIALS",
+				message: "Thông tin đăng nhập không chính xác"
+			}, 401)
 		}
 
 		// Get user roles
@@ -87,18 +95,24 @@ export const login = async (c: ValidatedContext) => {
 		const token = await sign(payload, JWT_SECRET)
 
 		return c.json({
-			token,
-			user: {
-				id: foundUser.id,
-				email: foundUser.email,
-				name: foundUser.name,
-				roles: rolesList,
-				status: foundUser.status,
+			data: {
+				token,
+				user: {
+					id: foundUser.id,
+					email: foundUser.email,
+					name: foundUser.name,
+					roles: rolesList,
+					status: foundUser.status,
+				},
 			},
+			message: "Đăng nhập thành công"
 		})
 	} catch (error) {
 		console.error("Login error:", error)
-		return c.json(errorResponses.internalServerError)
+		return c.json({
+			error: "INTERNAL_SERVER_ERROR",
+			message: "Lỗi hệ thống nội bộ"
+		}, 500)
 	}
 }
 
@@ -108,7 +122,10 @@ export const getUserInfo = async (c: ValidatedContext) => {
 		const user = c.get("user")
 
 		if (!user) {
-			return c.json(errorResponses.userNotAuthenticated)
+			return c.json({
+				error: "USER_NOT_AUTHENTICATED",
+				message: "Người dùng chưa được xác thực"
+			}, 401)
 		}
 
 		const userId = user.id
@@ -129,14 +146,20 @@ export const getUserInfo = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (dbUser.length === 0) {
-			return c.json(errorResponses.userNotFound)
+			return c.json({
+				error: "USER_NOT_FOUND",
+				message: "Không tìm thấy người dùng"
+			}, 404)
 		}
 
 		const foundUser = dbUser[0]
 
 		// Check if user is still active
 		if (foundUser.status !== "active") {
-			return c.json(errorResponses.accountInactive)
+			return c.json({
+				error: "ACCOUNT_INACTIVE",
+				message: "Tài khoản chưa được kích hoạt"
+			}, 401)
 		}
 
 		// Get user roles
@@ -167,11 +190,17 @@ export const getUserInfo = async (c: ValidatedContext) => {
 		}
 
 		return c.json({
-			user: userInfo,
+			data: {
+				user: userInfo,
+			},
+			message: "Lấy thông tin người dùng thành công"
 		})
 	} catch (error) {
 		console.error("Get user info error:", error)
-		return c.json(errorResponses.internalServerError)
+		return c.json({
+			error: "INTERNAL_SERVER_ERROR",
+			message: "Lỗi hệ thống nội bộ"
+		}, 500)
 	}
 }
 
@@ -198,20 +227,29 @@ export const verifyToken = async (c: ValidatedContext) => {
 			}
 
 			return c.json({
-				valid: true,
-				user: {
-					id: parseInt(userPayload.sub),
-					email: userPayload.email,
-					name: userPayload.name,
-					roles: userPayload.roles,
+				data: {
+					valid: true,
+					user: {
+						id: parseInt(userPayload.sub),
+						email: userPayload.email,
+						name: userPayload.name,
+						roles: userPayload.roles,
+					},
 				},
+				message: "Token hợp lệ"
 			})
 		} catch (jwtError) {
-			return c.json(errorResponses.invalidToken)
+			return c.json({
+				error: "INVALID_TOKEN",
+				message: "Token không hợp lệ hoặc đã hết hạn"
+			}, 400)
 		}
 	} catch (error) {
 		console.error("Token verification error:", error)
-		return c.json(errorResponses.internalServerError)
+		return c.json({
+			error: "INTERNAL_SERVER_ERROR",
+			message: "Lỗi hệ thống nội bộ"
+		}, 500)
 	}
 }
 
@@ -221,7 +259,10 @@ export const changePassword = async (c: ValidatedContext) => {
 		const user = c.get("user")
 
 		if (!user) {
-			return c.json(errorResponses.userNotAuthenticated)
+			return c.json({
+				error: "USER_NOT_AUTHENTICATED",
+				message: "Người dùng chưa được xác thực"
+			}, 401)
 		}
 
 		// Type assertion is safe here because zValidator middleware validates the data
@@ -238,14 +279,20 @@ export const changePassword = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (dbUser.length === 0) {
-			return c.json(errorResponses.userNotFound)
+			return c.json({
+				error: "USER_NOT_FOUND",
+				message: "Không tìm thấy người dùng"
+			}, 404)
 		}
 
 		const foundUser = dbUser[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json(errorResponses.accountInactive)
+			return c.json({
+				error: "ACCOUNT_INACTIVE",
+				message: "Tài khoản chưa được kích hoạt"
+			}, 401)
 		}
 
 		// Verify current password
@@ -255,7 +302,10 @@ export const changePassword = async (c: ValidatedContext) => {
 		)
 
 		if (!isCurrentPasswordValid) {
-			return c.json(errorResponses.passwordMismatch)
+			return c.json({
+				error: "PASSWORD_MISMATCH",
+				message: "Mật khẩu hiện tại không chính xác"
+			}, 400)
 		}
 
 		// Check if new password is different from current password
@@ -265,7 +315,10 @@ export const changePassword = async (c: ValidatedContext) => {
 		)
 
 		if (isSamePassword) {
-			return c.json(errorResponses.samePassword)
+			return c.json({
+				error: "SAME_PASSWORD",
+				message: "Mật khẩu mới phải khác với mật khẩu hiện tại"
+			}, 400)
 		}
 
 		// Hash the new password
@@ -281,11 +334,14 @@ export const changePassword = async (c: ValidatedContext) => {
 			.where(eq(users.id, user.id))
 
 		return c.json({
-			message: "Password changed successfully",
+			message: "Đổi mật khẩu thành công",
 		})
 	} catch (error) {
 		console.error("Change password error:", error)
-		return c.json(errorResponses.internalServerError)
+		return c.json({
+			error: "INTERNAL_SERVER_ERROR",
+			message: "Lỗi hệ thống nội bộ"
+		}, 500)
 	}
 }
 
@@ -306,14 +362,20 @@ export const forgotPassword = async (c: ValidatedContext) => {
 
 		// Check if user exists
 		if (user.length === 0) {
-			return c.json(errorResponses.emailNotFound)
+			return c.json({
+				error: "EMAIL_NOT_FOUND",
+				message: "Không tìm thấy email trong hệ thống"
+			}, 404)
 		}
 
 		const foundUser = user[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json(errorResponses.accountInactive)
+			return c.json({
+				error: "ACCOUNT_INACTIVE",
+				message: "Tài khoản chưa được kích hoạt"
+			}, 401)
 		}
 
 		// Generate secure random token
@@ -341,16 +403,21 @@ export const forgotPassword = async (c: ValidatedContext) => {
 				"Failed to send password reset email:",
 				emailError
 			)
-			return c.json(errorResponses.emailSendFailed)
+			return c.json({
+				error: "EMAIL_SEND_FAILED",
+				message: "Gửi email đặt lại mật khẩu thất bại"
+			}, 500)
 		}
 
 		return c.json({
-
-			message: "Password reset link has been sent to your email.",
+			message: "Liên kết đặt lại mật khẩu đã được gửi đến email của bạn",
 		})
 	} catch (error) {
 		console.error("Forgot password error:", error)
-		return c.json(errorResponses.internalServerError)
+		return c.json({
+			error: "INTERNAL_SERVER_ERROR",
+			message: "Lỗi hệ thống nội bộ"
+		}, 500)
 	}
 }
 
@@ -380,14 +447,20 @@ export const resetPassword = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (resetTokenRecord.length === 0) {
-			return c.json(errorResponses.invalidToken)
+			return c.json({
+				error: "INVALID_TOKEN",
+				message: "Token không hợp lệ hoặc đã hết hạn"
+			}, 400)
 		}
 
 		const tokenData = resetTokenRecord[0]
 
 		// Check if token has expired
 		if (new Date() > tokenData.expiresAt) {
-			return c.json(errorResponses.tokenExpired)
+			return c.json({
+				error: "TOKEN_EXPIRED",
+				message: "Token đã hết hạn"
+			}, 400)
 		}
 
 		// Get user data
@@ -398,14 +471,20 @@ export const resetPassword = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (user.length === 0) {
-			return c.json(errorResponses.userNotFound)
+			return c.json({
+				error: "USER_NOT_FOUND",
+				message: "Không tìm thấy người dùng"
+			}, 404)
 		}
 
 		const foundUser = user[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json(errorResponses.accountInactive)
+			return c.json({
+				error: "ACCOUNT_INACTIVE",
+				message: "Tài khoản chưa được kích hoạt"
+			}, 401)
 		}
 
 		// Check if new password is different from current password
@@ -414,7 +493,10 @@ export const resetPassword = async (c: ValidatedContext) => {
 			foundUser.password
 		)
 		if (isSamePassword) {
-			return c.json(errorResponses.samePassword)
+			return c.json({
+				error: "SAME_PASSWORD",
+				message: "Mật khẩu mới phải khác với mật khẩu hiện tại"
+			}, 400)
 		}
 
 		// Hash the new password
@@ -451,11 +533,14 @@ export const resetPassword = async (c: ValidatedContext) => {
 		}
 
 		return c.json({
-			message: "Password has been reset successfully",
+			message: "Đặt lại mật khẩu thành công",
 		})
 	} catch (error) {
 		console.error("Reset password error:", error)
-		return c.json(errorResponses.internalServerError)
+		return c.json({
+			error: "INTERNAL_SERVER_ERROR",
+			message: "Lỗi hệ thống nội bộ"
+		}, 500)
 	}
 }
 
@@ -471,7 +556,10 @@ export const updateProfile = async (c: ValidatedContext) => {
 		const user = c.get("user")
 
 		if (!user) {
-			return c.json(errorResponses.userNotAuthenticated)
+			return c.json({
+				error: "USER_NOT_AUTHENTICATED",
+				message: "Người dùng chưa được xác thực"
+			}, 401)
 		}
 
 		const userId = user.id
@@ -483,14 +571,20 @@ export const updateProfile = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (dbUser.length === 0) {
-			return c.json(errorResponses.userNotFound)
+			return c.json({
+				error: "USER_NOT_FOUND",
+				message: "Không tìm thấy người dùng"
+			}, 404)
 		}
 
 		const foundUser = dbUser[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json(errorResponses.accountInactive)
+			return c.json({
+				error: "ACCOUNT_INACTIVE",
+				message: "Tài khoản chưa được kích hoạt"
+			}, 401)
 		}
 
 		// Prepare metadata update
@@ -526,11 +620,16 @@ export const updateProfile = async (c: ValidatedContext) => {
 			.limit(1)
 
 		return c.json({
-			message: "Profile updated successfully",
-			user: updatedUser[0],
+			data: {
+				user: updatedUser[0],
+			},
+			message: "Cập nhật hồ sơ thành công",
 		})
 	} catch (error) {
 		console.error("Update profile error:", error)
-		return c.json(errorResponses.internalServerError)
+		return c.json({
+			error: "INTERNAL_SERVER_ERROR",
+			message: "Lỗi hệ thống nội bộ"
+		}, 500)
 	}
 }

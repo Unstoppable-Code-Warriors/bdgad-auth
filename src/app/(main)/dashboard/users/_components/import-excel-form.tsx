@@ -237,7 +237,7 @@ const ImportExcelForm = ({
         type="submit"
         disabled={!file || loading}
       >
-        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Gửi"}
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Tải lên"}
       </Button>
     </form>
   );

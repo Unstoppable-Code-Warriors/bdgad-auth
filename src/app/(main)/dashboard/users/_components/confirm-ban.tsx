@@ -79,7 +79,7 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       onClose();
     } catch (error) {
-      toast.error(`Không thể ${isActive ? "tạm ngừng" : "khôi phục"} tài khoản`);
+      toast.error(`Lỗi khi ${isActive ? "tạm ngừng" : "khôi phục"} tài khoản`);
     } finally {
       setIsLoading(false);
     }

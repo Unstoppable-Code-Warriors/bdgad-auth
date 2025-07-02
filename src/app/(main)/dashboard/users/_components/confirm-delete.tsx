@@ -23,7 +23,7 @@ const ConfirmDeleteUser = ({
 			dialog.closeAll()
 			toast.success("Người dùng đã được xóa!")
 		} catch (error) {
-			toast.error("Không thể xóa người dùng")
+			toast.error("Lỗi khi xóa người dùng")
 		} finally {
 			setIsLoading(false)
 		}

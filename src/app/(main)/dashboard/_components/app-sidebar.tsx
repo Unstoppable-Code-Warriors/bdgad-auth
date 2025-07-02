@@ -42,7 +42,7 @@ export function AppSidebar({
                   <Dna className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">BDGAD System</span>
+                  <span className="truncate font-medium">BDGAD</span>
                   <span className="truncate text-xs">
                     Biomedical Data Warehouse for Genomic Analysis and Diagnosis
                   </span>

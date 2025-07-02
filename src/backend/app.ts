@@ -35,6 +35,7 @@ app.get("/", (c) => {
 				userInfo: "GET /auth/me",
 				verifyToken: "GET /auth/verify/:token",
 				changePassword: "PUT /auth/change-password",
+				updateProfile: "PUT /auth/update-profile",
 				forgotPassword: "POST /auth/forgot-password",
 				resetPassword: "POST /auth/reset-password",
 			},

@@ -4,6 +4,7 @@ import {
 	changePasswordSchema,
 	forgotPasswordSchema,
 	resetPasswordSchema,
+	updateProfileSchema,
 	createValidator,
 } from "../types/validation"
 
@@ -20,5 +21,9 @@ export const validateForgotPassword = createValidator(
 )
 export const validateResetPassword = createValidator(
 	resetPasswordSchema,
+	"json"
+)
+export const validateUpdateProfile = createValidator(
+	updateProfileSchema,
 	"json"
 )

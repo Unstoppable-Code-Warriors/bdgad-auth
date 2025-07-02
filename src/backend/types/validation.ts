@@ -109,21 +109,51 @@ export const resetPasswordSchema = z
 		path: ["confirmPassword"],
 	})
 
+// Update profile validation schema
+export const updateProfileSchema = z.object({
+	name: z
+		.string({
+			required_error: "Name is required",
+			invalid_type_error: "Name must be a string",
+		})
+		.min(3, "Name must be at least 3 characters long")
+		.max(50, "Name must not exceed 50 characters")
+		.regex(
+			/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/,
+			"Name can only contain letters (including Vietnamese) and single spaces between words"
+		),
+	phone: z
+		.string()
+		.optional()
+		.refine((phone) => {
+			if (!phone || phone.trim() === "") return true; // Allow empty phone
+			return !/\s/.test(phone); // No spaces allowed if phone has value
+		}, "Phone number cannot contain spaces"),
+	address: z
+		.string()
+		.optional()
+		.refine((address) => {
+			if (!address || address.trim() === "") return true; // Allow empty address
+			const trimmedAddress = address.trim();
+			// Check length
+			if (trimmedAddress.length < 3 || trimmedAddress.length > 200) {
+				return false;
+			}
+			// Check for allowed characters: letters (including Vietnamese), numbers, single spaces, comma, slash
+			return /^[a-zA-ZÀ-ỹ0-9,/]+( [a-zA-ZÀ-ỹ0-9,/]+)*$/.test(trimmedAddress);
+		}, "Address must be 3-200 characters and can only contain letters (including Vietnamese), numbers, single spaces between words, commas, and slashes"),
+})
+
 // Custom validation error formatter
 export const formatValidationError = (error: z.ZodError) => {
 	const formattedErrors = error.issues.map((issue) => ({
 		field: issue.path.join("."),
 		message: issue.message,
-		code: issue.code,
 	}))
 
 	return {
-		success: false,
-		error: {
-			type: "validation_error",
-			message: "Please check the following fields and try again:",
-			details: formattedErrors,
-		},
+		error: "Validation error",
+		details: formattedErrors,
 	}
 }
 

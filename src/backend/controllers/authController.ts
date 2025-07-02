@@ -12,6 +12,7 @@ import {
 	changePasswordSchema,
 	forgotPasswordSchema,
 	resetPasswordSchema,
+	updateProfileSchema,
 } from "../types/validation"
 import {
 	sendPasswordResetEmail,
@@ -478,6 +479,82 @@ export const resetPassword = async (c: ValidatedContext) => {
 		})
 	} catch (error) {
 		console.error("Reset password error:", error)
+		return c.json({ error: "Internal server error" }, 500)
+	}
+}
+
+export const updateProfile = async (c: ValidatedContext) => {
+	try {
+		// Type assertion is safe here because zValidator middleware validates the data
+		const body = (c.req as any).valid("json") as z.infer<
+			typeof updateProfileSchema
+		>
+		const { name, phone, address } = body
+
+		// Get user from database
+		const user = c.get("user")
+
+		if (!user) {
+			return c.json({ error: "User not authenticated" }, 401)
+		}
+
+		const userId = user.id
+
+		const dbUser = await db
+			.select()
+			.from(users)
+			.where(eq(users.id, userId))
+			.limit(1)
+
+		if (dbUser.length === 0) {
+			return c.json({ error: "User not found" }, 404)
+		}
+
+		const foundUser = dbUser[0]
+
+		// Check if user is active
+		if (foundUser.status !== "active") {
+			return c.json({ error: "Account is not active" }, 401)
+		}
+
+		// Prepare metadata update
+		const currentMetadata = (foundUser.metadata as Record<string, string>) || {}
+		const updatedMetadata = {
+			...currentMetadata,
+			phone: phone?.trim() || "",
+			address: address?.trim() || "",
+		}
+
+		// Update user in database
+		await db
+			.update(users)
+			.set({
+				name: name.trim(),
+				metadata: updatedMetadata,
+				updatedAt: new Date(),
+			})
+			.where(eq(users.id, userId))
+
+		// Return updated user info
+		const updatedUser = await db
+			.select({
+				id: users.id,
+				email: users.email,
+				name: users.name,
+				status: users.status,
+				metadata: users.metadata,
+				updatedAt: users.updatedAt,
+			})
+			.from(users)
+			.where(eq(users.id, userId))
+			.limit(1)
+
+		return c.json({
+			message: "Profile updated successfully",
+			user: updatedUser[0],
+		})
+	} catch (error) {
+		console.error("Update profile error:", error)
 		return c.json({ error: "Internal server error" }, 500)
 	}
 }

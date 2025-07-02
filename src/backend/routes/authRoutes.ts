@@ -6,6 +6,7 @@ import {
 	changePassword,
 	forgotPassword,
 	resetPassword,
+	updateProfile,
 } from "../controllers/authController"
 import {
 	validateLogin,
@@ -13,6 +14,7 @@ import {
 	validateChangePassword,
 	validateForgotPassword,
 	validateResetPassword,
+	validateUpdateProfile,
 } from "../middleware/validationMiddleware"
 import { jwtAuth } from "../middleware/jwtMiddleware"
 
@@ -40,5 +42,16 @@ authRoutes.post("/forgot-password", validateForgotPassword, forgotPassword)
 
 // POST /auth/reset-password - Reset password with token
 authRoutes.post("/reset-password", validateResetPassword, resetPassword)
+
+// POST /auth/change-password - Change user password
+authRoutes.post(
+	"/change-password",
+	jwtAuth,
+	validateChangePassword,
+	changePassword
+)
+
+// PUT /auth/update-profile - Update user profile
+authRoutes.put("/update-profile",jwtAuth, validateUpdateProfile, updateProfile)
 
 export default authRoutes

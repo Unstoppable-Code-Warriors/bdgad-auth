@@ -37,7 +37,7 @@ export const login = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (user.length === 0) {
-			return c.json({ error: "Invalid credentials" }, 401)
+			return c.json(errorResponses.invalidCredentials)
 		}
 
 		const foundUser = user[0]
@@ -53,7 +53,7 @@ export const login = async (c: ValidatedContext) => {
 			foundUser.password
 		)
 		if (!isPasswordValid) {
-			return c.json({ error: "Invalid credentials" }, 401)
+			return c.json(errorResponses.invalidCredentials)
 		}
 
 		// Get user roles
@@ -98,7 +98,7 @@ export const login = async (c: ValidatedContext) => {
 		})
 	} catch (error) {
 		console.error("Login error:", error)
-		return c.json({ error: "Internal server error" }, 500)
+		return c.json(errorResponses.internalServerError)
 	}
 }
 
@@ -108,7 +108,7 @@ export const getUserInfo = async (c: ValidatedContext) => {
 		const user = c.get("user")
 
 		if (!user) {
-			return c.json({ error: "No authentication information found" }, 401)
+			return c.json(errorResponses.userNotAuthenticated)
 		}
 
 		const userId = user.id
@@ -129,7 +129,7 @@ export const getUserInfo = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (dbUser.length === 0) {
-			return c.json({ error: "User not found" }, 404)
+			return c.json(errorResponses.userNotFound)
 		}
 
 		const foundUser = dbUser[0]
@@ -171,7 +171,7 @@ export const getUserInfo = async (c: ValidatedContext) => {
 		})
 	} catch (error) {
 		console.error("Get user info error:", error)
-		return c.json({ error: "Internal server error" }, 500)
+		return c.json(errorResponses.internalServerError)
 	}
 }
 
@@ -207,14 +207,11 @@ export const verifyToken = async (c: ValidatedContext) => {
 				},
 			})
 		} catch (jwtError) {
-			return c.json({
-				valid: false,
-				error: "Invalid or expired token",
-			})
+			return c.json(errorResponses.invalidToken)
 		}
 	} catch (error) {
 		console.error("Token verification error:", error)
-		return c.json({ error: "Internal server error" }, 500)
+		return c.json(errorResponses.internalServerError)
 	}
 }
 
@@ -224,7 +221,7 @@ export const changePassword = async (c: ValidatedContext) => {
 		const user = c.get("user")
 
 		if (!user) {
-			return c.json({ error: "User not authenticated" }, 401)
+			return c.json(errorResponses.userNotAuthenticated)
 		}
 
 		// Type assertion is safe here because zValidator middleware validates the data
@@ -241,14 +238,14 @@ export const changePassword = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (dbUser.length === 0) {
-			return c.json({ error: "User not found" }, 404)
+			return c.json(errorResponses.userNotFound)
 		}
 
 		const foundUser = dbUser[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json({ error: "Account is not active" }, 401)
+			return c.json(errorResponses.accountInactive)
 		}
 
 		// Verify current password
@@ -258,7 +255,7 @@ export const changePassword = async (c: ValidatedContext) => {
 		)
 
 		if (!isCurrentPasswordValid) {
-			return c.json({ error: "Current password is incorrect" }, 400)
+			return c.json(errorResponses.passwordMismatch)
 		}
 
 		// Check if new password is different from current password
@@ -268,12 +265,7 @@ export const changePassword = async (c: ValidatedContext) => {
 		)
 
 		if (isSamePassword) {
-			return c.json(
-				{
-					error: "New password must be different from current password",
-				},
-				400
-			)
+			return c.json(errorResponses.samePassword)
 		}
 
 		// Hash the new password
@@ -293,7 +285,7 @@ export const changePassword = async (c: ValidatedContext) => {
 		})
 	} catch (error) {
 		console.error("Change password error:", error)
-		return c.json({ error: "Internal server error" }, 500)
+		return c.json(errorResponses.internalServerError)
 	}
 }
 
@@ -321,12 +313,7 @@ export const forgotPassword = async (c: ValidatedContext) => {
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json({
-				status: 401,
-				code: "ACCOUNT_INACTIVE",
-				message: "Account is not active",
-				details: "The account associated with this email is not active."
-			})
+			return c.json(errorResponses.accountInactive)
 		}
 
 		// Generate secure random token
@@ -354,10 +341,7 @@ export const forgotPassword = async (c: ValidatedContext) => {
 				"Failed to send password reset email:",
 				emailError
 			)
-			return c.json({
-				error: "Failed to send password reset email",
-				details: "There was an error sending the password reset email. Please try again later."
-			}, 500)
+			return c.json(errorResponses.emailSendFailed)
 		}
 
 		return c.json({
@@ -366,10 +350,7 @@ export const forgotPassword = async (c: ValidatedContext) => {
 		})
 	} catch (error) {
 		console.error("Forgot password error:", error)
-		return c.json({
-			error: "Internal server error",
-			details: "An unexpected error occurred while processing your request."
-		}, 500)
+		return c.json(errorResponses.internalServerError)
 	}
 }
 
@@ -399,14 +380,14 @@ export const resetPassword = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (resetTokenRecord.length === 0) {
-			return c.json({ error: "Invalid or expired reset token" }, 400)
+			return c.json(errorResponses.invalidToken)
 		}
 
 		const tokenData = resetTokenRecord[0]
 
 		// Check if token has expired
 		if (new Date() > tokenData.expiresAt) {
-			return c.json({ error: "Reset token has expired" }, 400)
+			return c.json(errorResponses.tokenExpired)
 		}
 
 		// Get user data
@@ -417,14 +398,14 @@ export const resetPassword = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (user.length === 0) {
-			return c.json({ error: "User not found" }, 404)
+			return c.json(errorResponses.userNotFound)
 		}
 
 		const foundUser = user[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json({ error: "Account is not active" }, 401)
+			return c.json(errorResponses.accountInactive)
 		}
 
 		// Check if new password is different from current password
@@ -433,12 +414,7 @@ export const resetPassword = async (c: ValidatedContext) => {
 			foundUser.password
 		)
 		if (isSamePassword) {
-			return c.json(
-				{
-					error: "New password must be different from current password",
-				},
-				400
-			)
+			return c.json(errorResponses.samePassword)
 		}
 
 		// Hash the new password
@@ -479,7 +455,7 @@ export const resetPassword = async (c: ValidatedContext) => {
 		})
 	} catch (error) {
 		console.error("Reset password error:", error)
-		return c.json({ error: "Internal server error" }, 500)
+		return c.json(errorResponses.internalServerError)
 	}
 }
 
@@ -495,7 +471,7 @@ export const updateProfile = async (c: ValidatedContext) => {
 		const user = c.get("user")
 
 		if (!user) {
-			return c.json({ error: "User not authenticated" }, 401)
+			return c.json(errorResponses.userNotAuthenticated)
 		}
 
 		const userId = user.id
@@ -507,14 +483,14 @@ export const updateProfile = async (c: ValidatedContext) => {
 			.limit(1)
 
 		if (dbUser.length === 0) {
-			return c.json({ error: "User not found" }, 404)
+			return c.json(errorResponses.userNotFound)
 		}
 
 		const foundUser = dbUser[0]
 
 		// Check if user is active
 		if (foundUser.status !== "active") {
-			return c.json({ error: "Account is not active" }, 401)
+			return c.json(errorResponses.accountInactive)
 		}
 
 		// Prepare metadata update
@@ -555,6 +531,6 @@ export const updateProfile = async (c: ValidatedContext) => {
 		})
 	} catch (error) {
 		console.error("Update profile error:", error)
-		return c.json({ error: "Internal server error" }, 500)
+		return c.json(errorResponses.internalServerError)
 	}
 }

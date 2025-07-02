@@ -6,6 +6,7 @@ import {
 	resetPasswordSchema,
 	updateProfileSchema,
 	createValidator,
+	googleLoginSchema,
 } from "../types/validation"
 
 // Export validation middleware for use in routes
@@ -27,3 +28,4 @@ export const validateUpdateProfile = createValidator(
 	updateProfileSchema,
 	"json"
 )
+export const validateGoogleLogin = createValidator(googleLoginSchema, "json")

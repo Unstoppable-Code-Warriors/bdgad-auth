@@ -13,6 +13,7 @@ import {
 	forgotPasswordSchema,
 	resetPasswordSchema,
 	updateProfileSchema,
+	googleLoginSchema,
 } from "../types/validation"
 import {
 	sendPasswordResetEmail,
@@ -632,4 +633,81 @@ export const updateProfile = async (c: ValidatedContext) => {
 			message: "Lỗi hệ thống nội bộ"
 		}, 500)
 	}
+}
+
+export const googleLogin = async (c: ValidatedContext) => {
+	const body = (c.req as any).valid("json") as z.infer<
+			typeof googleLoginSchema
+		>
+	const { token } = body
+
+	const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`)
+	const data = await response.json()
+	if (!response.ok) {
+		return c.json({
+			error: "INVALID_TOKEN",
+			message: "Token không hợp lệ"
+		}, 400)
+	}
+
+	if (response.ok) {
+		const { email } = data
+
+		const user = await db.select().from(users).where(eq(users.email, email)).limit(1)
+
+		if (user.length === 0) {
+			return c.json({
+				error: "USER_NOT_FOUND",
+				message: `Tài khoản ${email} không tồn tại trong hệ thống`,
+			}, 404)
+		}
+
+		const foundUser = user[0]
+
+		// Check if user is active
+		if (foundUser.status !== "active") {
+			return c.json({
+				error: "ACCOUNT_INACTIVE",
+				message: `Tài khoản ${email} chưa được kích hoạt`
+			}, 401)
+		
+		}
+		// Get user roles
+		const userRoleData = await db
+			.select({
+				roleId: roles.id,
+				roleName: roles.name,
+				roleCode: roles.code,
+			})
+			.from(userRoles)
+			.innerJoin(roles, eq(userRoles.roleId, roles.id))
+			.where(eq(userRoles.userId, foundUser.id))
+
+		const rolesList = userRoleData.map((role) => ({
+			id: role.roleId,
+			name: role.roleName,
+			code: role.roleCode,
+		}))
+
+		// Create JWT payload
+		const payload = {
+			sub: foundUser.id.toString(),
+			email: foundUser.email,
+			name: foundUser.name,
+			roles: rolesList,
+			iat: Math.floor(Date.now() / 1000),
+			exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
+		}
+
+		// Sign JWT token
+		const token = await sign(payload, JWT_SECRET)
+		return c.json({
+			data: {
+				token,
+				user: foundUser,
+			},
+			message: `Đăng nhập Google thành công với tài khoản ${email}`
+		})
+
+	}	
 }

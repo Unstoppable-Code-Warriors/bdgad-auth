@@ -7,6 +7,7 @@ import {
 	forgotPassword,
 	resetPassword,
 	updateProfile,
+	googleLogin,
 } from "../controllers/authController"
 import {
 	validateLogin,
@@ -15,6 +16,7 @@ import {
 	validateForgotPassword,
 	validateResetPassword,
 	validateUpdateProfile,
+	validateGoogleLogin,
 } from "../middleware/validationMiddleware"
 import { jwtAuth } from "../middleware/jwtMiddleware"
 
@@ -53,5 +55,8 @@ authRoutes.post(
 
 // PUT /auth/update-profile - Update user profile
 authRoutes.put("/update-profile",jwtAuth, validateUpdateProfile, updateProfile)
+
+// POST /auth/google-login - Google login
+authRoutes.post("/sso", validateGoogleLogin, googleLogin)
 
 export default authRoutes

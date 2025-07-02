@@ -38,6 +38,7 @@ app.get("/", (c) => {
 				updateProfile: "PUT /auth/update-profile",
 				forgotPassword: "POST /auth/forgot-password",
 				resetPassword: "POST /auth/reset-password",
+				googleLogin: "POST /auth/sso",
 			},
 		},
 	})

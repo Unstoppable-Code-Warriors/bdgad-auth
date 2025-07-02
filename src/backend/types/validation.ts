@@ -169,3 +169,10 @@ export const createValidator = (
     }
   });
 };
+
+export const googleLoginSchema = z.object({
+  token: z.string({
+    required_error: "Token là bắt buộc",
+    invalid_type_error: "Token phải là chuỗi ký tự",
+  })
+})

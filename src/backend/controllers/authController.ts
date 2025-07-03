@@ -205,7 +205,6 @@ export const verifyToken = async (c: ValidatedContext) => {
             }
 
             return c.json({
-                data: {
                     valid: true,
                     user: {
                         id: parseInt(userPayload.sub),
@@ -213,8 +212,6 @@ export const verifyToken = async (c: ValidatedContext) => {
                         name: userPayload.name,
                         roles: userPayload.roles,
                     },
-                },
-                message: "Token hợp lệ"
             })
         } catch (jwtError) {
             return c.json(errorResponses.invalidToken)
@@ -351,7 +348,7 @@ export const forgotPassword = async (c: ValidatedContext) => {
                 "Failed to send password reset email:",
                 emailError
             )
-            return c.json(errorResponses.emailSendFailed, 500)
+            return c.json(errorResponses.emailSendFailed)
         }
 
         return c.json({

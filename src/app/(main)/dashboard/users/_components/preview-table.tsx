@@ -408,7 +408,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     emailMap.forEach((rows, email) => {
       if (rows.length > 1) {
         errors.push(
-          `Duplicate emails found in rows: ${rows
+          `Email trùng lặp trong các dòng: ${rows
             .sort((a, b) => a - b)
             .join(", ")}`
         );
@@ -426,7 +426,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     });
     if (existingEmailRows.length > 0) {
       errors.push(
-        `The following emails already exist in rows: ${existingEmailRows
+        `Email đã tồn tại ở các dòng: ${existingEmailRows
           .sort((a, b) => a - b)
           .join(", ")}`
       );
@@ -444,11 +444,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     // Find all rows with duplicate phones
     phoneMap.forEach((rows, phone) => {
       if (rows.length > 1) {
-        errors.push(
-          `Duplicate phone numbers found in rows: ${rows
-            .sort((a, b) => a - b)
-            .join(", ")}`
-        );
+        errors.push(`: ${rows.sort((a, b) => a - b).join(", ")}`);
       }
     });
 
@@ -468,7 +464,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     });
     if (existingPhoneRows.length > 0) {
       errors.push(
-        `The following phone numbers already exist in rows: ${existingPhoneRows
+        `Số điện thoại đã tồn tại ở các dòng: ${existingPhoneRows
           .sort((a, b) => a - b)
           .join(", ")}`
       );
@@ -504,7 +500,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
           <div className="flex flex-col items-center justify-center">
             <Loader className="h-12 w-12 text-muted-foreground animate-spin" />
             <p className="mt-2 text-sm text-muted-foreground">
-              Processing Excel file...
+              Đang xử lý file excel ...
             </p>
           </div>
         ) : (

@@ -13,12 +13,12 @@ import {
   not,
   sql,
   desc,
+  isNull,
 } from "drizzle-orm";
 import { withAuth } from "@/lib/utils/auth";
 import bcrypt from "bcryptjs";
 import { FetchLimit } from "../constants";
 import {
-  sendPasswordEmail,
   sendPasswordEmailsToUsers,
   sendRoleChangeEmail,
   sendDeletionEmail,
@@ -103,10 +103,15 @@ async function getUsersCore({
       // Get users with their roles
       const usersWithRoles = search
         ? await baseQuery
-            .where(ilike(users.email, `%${search}%`))
+            .where(
+              and(ilike(users.email, `%${search}%`), isNull(users.deletedAt))
+            )
             .limit(limit)
             .offset(offset)
-        : await baseQuery.limit(limit).offset(offset);
+        : await baseQuery
+            .where(isNull(users.deletedAt))
+            .limit(limit)
+            .offset(offset);
 
       // Group roles by user
       const userMap = new Map<number, UserWithRoles>();
@@ -138,8 +143,13 @@ async function getUsersCore({
         ? await tx
             .select({ count: count() })
             .from(users)
-            .where(ilike(users.email, `%${search}%`))
-        : await tx.select({ count: count() }).from(users);
+            .where(
+              and(ilike(users.email, `%${search}%`), isNull(users.deletedAt))
+            )
+        : await tx
+            .select({ count: count() })
+            .from(users)
+            .where(isNull(users.deletedAt));
 
       return {
         users: userList,
@@ -697,11 +707,11 @@ async function deleteUserCore({ id, reason }: { id: number; reason?: string }) {
     }
 
     await db.transaction(async (tx) => {
-      // Delete user roles first (due to foreign key constraints)
-      await tx.delete(userRoles).where(eq(userRoles.userId, id));
-
-      // Then delete the user
-      await tx.delete(users).where(eq(users.id, id));
+      // Soft delete user by setting deletedAt = now
+      await tx
+        .update(users)
+        .set({ deletedAt: new Date() })
+        .where(eq(users.id, id));
     });
 
     // Send email notification

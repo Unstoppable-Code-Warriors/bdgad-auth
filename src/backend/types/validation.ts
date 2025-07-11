@@ -127,8 +127,9 @@ export const updateProfileSchema = z.object({
     .optional()
     .refine((phone) => {
       if (!phone || phone.trim() === "") return true; // Allow empty phone
-      return !/\s/.test(phone); // No spaces allowed if phone has value
-    }, "Số điện thoại không được chứa khoảng trắng"),
+      const trimmed = phone.trim();
+      return /^\d{10}$/.test(trimmed); // Must be exactly 10 digits, no spaces or other characters
+    }, "Số điện thoại phải gồm đúng 10 chữ số và không được chứa khoảng trắng"),
   address: z
     .string()
     .optional()
@@ -154,7 +155,9 @@ export const formatValidationError = (error: z.ZodError) => {
 
   return {
     error: "VALIDATION_ERROR",
-    message: `Lỗi xác thực: ${formattedErrors.map(err => `${err.message}`).join(". ")}`,
+    message: `Lỗi xác thực: ${formattedErrors
+      .map((err) => `${err.message}`)
+      .join(". ")}`,
   };
 };
 
@@ -174,5 +177,5 @@ export const googleLoginSchema = z.object({
   token: z.string({
     required_error: "Token là bắt buộc",
     invalid_type_error: "Token phải là chuỗi ký tự",
-  })
-})
+  }),
+});

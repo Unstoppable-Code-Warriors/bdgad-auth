@@ -46,7 +46,7 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <div className="max-w-[160px] truncate" title={row.original.email}>
+      <div className="max-w-[150px] truncate" title={row.original.email}>
         {row.original.email}
       </div>
     ),
@@ -56,7 +56,7 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     accessorKey: "roles",
     header: "Vai trò",
     cell: ({ row }) => (
-      <div className="flex gap-1 max-w-[100px]">
+      <div className="flex gap-1 max-w-[90px]">
         {row.original.roles.map((role) => (
           <Badge key={role.id}>{userRole[role.name]}</Badge>
         ))}

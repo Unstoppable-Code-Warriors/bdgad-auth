@@ -361,21 +361,6 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     setValidationError([]); // Clear previous validation errors
     const errors: string[] = [];
 
-    // Check for empty required fields
-    const emptyRowsRequired = importedUsers.filter(
-      (user) => !user.name.trim() || !user.email.trim() || !user.roleId
-    );
-    if (emptyRowsRequired.length > 0) {
-      errors.push(
-        "Vui lòng điền tất cả các trường bắt buộc (Tên, Email, Vai trò) trước khi kiểm tra"
-      );
-    }
-
-    // Check account limit
-    if (importedUsers.length > 50) {
-      errors.push("Không thể nhập quá 50 tài khoản cùng lúc");
-    }
-
     // Check for row-level validation errors
     const rowsWithErrors: number[] = [];
     importedUsers.forEach((user, index) => {
@@ -392,7 +377,20 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
       }
     });
     if (rowsWithErrors.length > 0) {
-      errors.push(`Có lỗi trong các hàng: ${rowsWithErrors.join(", ")}`);
+      errors.push(`Lỗi ở các hàng: ${rowsWithErrors.join(", ")}`);
+    }
+
+    // Check for empty required fields
+    const emptyRowsRequired = importedUsers.filter(
+      (user) => !user.name.trim() || !user.email.trim() || !user.roleId
+    );
+    if (emptyRowsRequired.length > 0) {
+      errors.push("Các trường bắt buộc phải điền (Tên, Email, Vai trò)");
+    }
+
+    // Check account limit
+    if (importedUsers.length > 50) {
+      errors.push("Không thể nhập quá 50 tài khoản cùng lúc");
     }
 
     // Check for duplicate emails within the import
@@ -426,7 +424,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     });
     if (existingEmailRows.length > 0) {
       errors.push(
-        `Email đã tồn tại ở các dòng: ${existingEmailRows
+        `Email đã tồn tại trong các dòng: ${existingEmailRows
           .sort((a, b) => a - b)
           .join(", ")}`
       );
@@ -444,7 +442,11 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     // Find all rows with duplicate phones
     phoneMap.forEach((rows, phone) => {
       if (rows.length > 1) {
-        errors.push(`: ${rows.sort((a, b) => a - b).join(", ")}`);
+        errors.push(
+          `Sế điện thoại trùng lặp trong các dòng: ${rows
+            .sort((a, b) => a - b)
+            .join(", ")}`
+        );
       }
     });
 

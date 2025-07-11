@@ -1,0 +1,8 @@
+npm error Missing script: "db:studo"
+npm error
+npm error Did you mean this?
+npm error   npm run db:studio # run the "db:studio" package script
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /home/thangngo/.npm/_logs/2025-07-05T09_36_56_495Z-debug-0.log

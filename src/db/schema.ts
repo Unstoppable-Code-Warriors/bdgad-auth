@@ -32,6 +32,7 @@ export const users = pgTable("users", {
   metadata: jsonb("metadata").notNull().default({}),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
   status: varchar("status", { length: 255 }).notNull().default("active"),
 });
 

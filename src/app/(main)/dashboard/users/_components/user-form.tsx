@@ -21,6 +21,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { userRole } from "@/lib/constants";
+import { phoneError } from "@/lib/utils/messageErrors";
 
 interface UserFormProps {
   action: "create" | "update";
@@ -52,84 +53,72 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
     validate: {
       name: (value: string) => {
         const trimmedValue = value.trim();
-      
+
         if (trimmedValue.length === 0) return "Tên là bắt buộc";
-      
+
         const validPattern = /^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/u;
-      
+
         if (!validPattern.test(trimmedValue)) {
           return "Tên chỉ được chứa chữ cái (bao gồm tiếng Việt) và khoảng trắng giữa các từ";
         }
-      
-        if (trimmedValue.length > 50 || trimmedValue.length < 3) return "Tên không được vượt quá 50 ký tự và phải có ít nhất 3 ký tự";
-      
+
+        if (trimmedValue.length > 50 || trimmedValue.length < 3)
+          return "Tên không được vượt quá 50 ký tự và phải có ít nhất 3 ký tự";
+
         return null;
       },
       email: (value: string) => {
         const trimmedValue = value.trim();
         if (trimmedValue.length === 0) return "Email là bắt buộc";
-        if (!/^\S+@\S+$/.test(trimmedValue)) return "Định dạng email không hợp lệ";
-        
+        if (!/^\S+@\S+$/.test(trimmedValue))
+          return "Định dạng email không hợp lệ";
+
         // Check if email already exists in the system (skip check in update mode)
         if (!isUpdateMode) {
-          const emailExists = users.some(user => user.email === trimmedValue);
+          const emailExists = users.some((user) => user.email === trimmedValue);
           if (emailExists) return "Email đã tồn tại trong hệ thống";
         }
-        
+
         return null;
       },
       roleId: (value: string) => (value ? null : "Vui lòng chọn vai trò"),
       phone: (value: string) => {
         const trimmedValue = value.trim();
         if (!trimmedValue) return null; // Phone is optional
-      
-        // Require country code prefix (starting with +)
-        if (!trimmedValue.startsWith('+')) {
-          return "Vui lòng nhập mã quốc gia bắt đầu bằng +";
+
+        if (!phoneError.pattern.test(trimmedValue)) {
+          return phoneError.message;
         }
 
-        // Basic phone number validation
-        if (trimmedValue.length < 12 || trimmedValue.length > 13) {
-          return "Số điện thoại phải có từ 12-13 ký tự bao gồm mã quốc gia";
-        }
-
-        if (!/^\+\d+$/.test(trimmedValue)) {
-          return "Số điện thoại chỉ được chứa + và các chữ số";
-        }
-
-        if (/\s/.test(trimmedValue)) {
-          return "Số điện thoại không được chứa khoảng trắng";
-        }
-      
         // Check if phone already exists in the system
-        const phoneExists = users.some(user => {
+        const phoneExists = users.some((user) => {
           if (isUpdateMode && user.id === userData?.id) return false;
           const metadata = user.metadata as UserMetadata;
           return metadata?.phone === trimmedValue;
         });
         if (phoneExists) return "Số điện thoại đã tồn tại trong hệ thống";
-      
+
         return null;
       },
       address: (value: string) => {
         const trimmedValue = value.trim();
         if (!trimmedValue) return null; // Address is optional
-        
+
         // Check for multiple spaces
         if (/\s{2,}/.test(trimmedValue)) {
           return "Địa chỉ không được chứa nhiều khoảng trắng liên tiếp";
         }
-        
+
         // Check for allowed characters: letters (including Vietnamese), numbers, spaces, commas, and slashes
         const validPattern = /^[a-zA-ZÀ-ỹ0-9\s,./-]+$/u;
         if (!validPattern.test(trimmedValue)) {
           return "Địa chỉ chỉ được chứa chữ cái (bao gồm tiếng Việt), số, khoảng trắng, dấu phẩy (,) và dấu gạch chéo (/)";
         }
-        
+
         if (trimmedValue.length > 200 || trimmedValue.length < 3) {
           return "Địa chỉ không được vượt quá 200 ký tự và phải có ít nhất 3 ký tự";
         }
-        
+
         return null;
       },
     },
@@ -137,7 +126,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
 
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
-    console.log("values.phone",values.phone);
+    console.log("values.phone", values.phone);
     try {
       const metadata: UserMetadata = {
         phone: values.phone.trim(),
@@ -159,7 +148,9 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         });
 
         if (roleChanged) {
-          toast.success("Cập nhật người dùng thành công. Email thông báo đã được gửi.");
+          toast.success(
+            "Cập nhật người dùng thành công. Email thông báo đã được gửi."
+          );
         } else {
           toast.success("Cập nhật người dùng thành công");
         }
@@ -181,7 +172,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
     } catch (error) {
       console.error(error);
       toast.error("Lỗi khi tạo người dùng");
-      } finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -190,7 +181,9 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
     <form onSubmit={form.onSubmit(handleSubmit)}>
       <div className="grid gap-4 py-4">
         <div className="grid gap-2">
-          <div>Tên <span className="text-red-500">*</span></div>
+          <div>
+            Tên <span className="text-red-500">*</span>
+          </div>
           <Input
             id="name"
             {...form.getInputProps("name")}
@@ -204,7 +197,9 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <div>Email <span className="text-red-500">*</span></div>
+          <div>
+            Email <span className="text-red-500">*</span>
+          </div>
           <Input
             id="email"
             {...form.getInputProps("email")}
@@ -221,7 +216,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
           <Label htmlFor="phone">Số điện thoại (tùy chọn)</Label>
           <Input
             id="phone"
-            placeholder="+84987654321"
+            placeholder="0393271123"
             onChange={(e) => form.setFieldValue("phone", e.target.value)}
             value={form.values.phone}
           />
@@ -236,7 +231,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
             id="address"
             {...form.getInputProps("address")}
             placeholder="Nhập địa chỉ"
-            className="resize-none" 
+            className="resize-none"
           />
           {form.errors.address && (
             <div className="text-sm text-red-600">{form.errors.address}</div>
@@ -244,10 +239,14 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <div>Vai trò <span className="text-red-500">*</span></div>
+          <div>
+            Vai trò <span className="text-red-500">*</span>
+          </div>
           <Select
             value={form.values.roleId}
-            onValueChange={(value: string) => form.setFieldValue("roleId", value)}
+            onValueChange={(value: string) =>
+              form.setFieldValue("roleId", value)
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Chọn vai trò" />

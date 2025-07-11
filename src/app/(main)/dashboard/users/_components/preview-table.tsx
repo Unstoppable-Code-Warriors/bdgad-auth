@@ -41,6 +41,7 @@ import {
 } from "@/lib/utils/validate-data-excel";
 import { useQueryClient } from "@tanstack/react-query";
 import { userRole } from "@/lib/constants";
+import { phoneError } from "@/lib/utils/messageErrors";
 
 interface ImportedUser {
   id: string;
@@ -54,12 +55,12 @@ interface ImportedUser {
   };
 }
 
-interface ImportDataTableProps {
+interface PreviewTableProps {
   users: GetUsersResult["users"];
   roles?: GetRolesResult["roles"];
 }
 
-export function ImportDataTable({ roles, users }: ImportDataTableProps) {
+export function PreviewTable({ roles, users }: PreviewTableProps) {
   const [importedUsers, setImportedUsers] = useState<ImportedUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -210,7 +211,7 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     // Name validation
     const nameStr = row.Name ? String(row.Name) : "";
     if (!nameStr.trim()) {
-      errors.name = "Tên là bắt buộc";  
+      errors.name = "Tên là bắt buộc";
     } else {
       const trimmedName = nameStr.trim();
       if (trimmedName.length < 3 || trimmedName.length > 50) {
@@ -239,15 +240,8 @@ export function ImportDataTable({ roles, users }: ImportDataTableProps) {
     if (row.Phone) {
       const phone = String(row.Phone).trim();
 
-      if (!phone.startsWith("+")) {
-        errors.phone = "Vui lòng nhập mã quốc gia bắt đầu bằng +";
-      } else if (phone.length < 12 || phone.length > 13) {
-        errors.phone =
-          "Số điện thoại phải có từ 12-13 ký tự bao gồm mã quốc gia";
-      } else if (/\s/.test(phone)) {
-        errors.phone = "Số điện thoại không được chứa khoảng trắng";
-      } else if (!/^\+\d+$/.test(phone)) {
-        errors.phone = "Số điện thoại chỉ được chứa + và các chữ số";
+      if (!phoneError.pattern.test(phone)) {
+        errors.phone = phoneError.message;
       }
     }
 

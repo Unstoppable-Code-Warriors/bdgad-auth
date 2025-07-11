@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FileDown } from "lucide-react";
-import { ImportDataTable } from "../_components/import-data-table";
+
 import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "@/lib/actions/users";
 import { getRoles } from "@/lib/actions/roles";
+import { PreviewTable } from "../_components/preview-table";
 
 export default function ImportUsersPage() {
   const router = useRouter();
@@ -18,27 +19,35 @@ export default function ImportUsersPage() {
     link.click();
   };
 
-  const { data: usersData, isLoading: isLoadingUsers, error: usersError } = useQuery({
+  const {
+    data: usersData,
+    isLoading: isLoadingUsers,
+    error: usersError,
+  } = useQuery({
     queryKey: ["users"],
-    queryFn: () => getUsers({
+    queryFn: () =>
+      getUsers({
         page: 1,
         search: "",
-        limit: 1000
-    }),
+        limit: 1000,
+      }),
     staleTime: 0,
     refetchOnWindowFocus: false,
   });
 
-  const { data: rolesData, isLoading: isLoadingRoles, error: rolesError } = useQuery({
+  const {
+    data: rolesData,
+    isLoading: isLoadingRoles,
+    error: rolesError,
+  } = useQuery({
     queryKey: ["roles"],
     queryFn: () => getRoles(),
   });
 
-
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4">
-      <Button
+        <Button
           variant="outline"
           onClick={() => router.push("/dashboard/users")}
         >
@@ -47,16 +56,14 @@ export default function ImportUsersPage() {
         </Button>
       </div>
       <div className="flex items-center justify-between gap-4">
-        
-     <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold">Nhập Excel</h1>
-
-     </div>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Nhập Excel</h1>
+        </div>
 
         <Button variant="outline" onClick={downloadTemplateModal}>
-        <FileDown className="h-4 w-4 mr-2" />
-        Tải xuống mẫu
-      </Button>
+          <FileDown className="h-4 w-4 mr-2" />
+          Tải xuống mẫu
+        </Button>
       </div>
 
       <Card>
@@ -64,9 +71,12 @@ export default function ImportUsersPage() {
           <CardTitle>Tạo tài khoản từ file excel</CardTitle>
         </CardHeader>
         <CardContent>
-          <ImportDataTable users={usersData?.users || []} roles={rolesData?.roles || []} />
+          <PreviewTable
+            users={usersData?.users || []}
+            roles={rolesData?.roles || []}
+          />
         </CardContent>
       </Card>
     </div>
   );
-} 
+}

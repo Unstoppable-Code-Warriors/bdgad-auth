@@ -126,9 +126,9 @@ export const updateProfileSchema = z.object({
     .string()
     .optional()
     .refine((phone) => {
-      if (!phone || phone.trim() === "") return true; // Allow empty phone
+      if (!phone || phone.trim() === "") return true;
       const trimmed = phone.trim();
-      return /^\d{10}$/.test(trimmed); // Must be exactly 10 digits, no spaces or other characters
+      return /^\d{10}$/.test(trimmed);
     }, "Số điện thoại phải gồm đúng 10 chữ số và không được chứa khoảng trắng"),
   address: z
     .string()

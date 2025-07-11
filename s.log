@@ -10,3 +10,293 @@ Using 'pg' driver for database querying
  Warning  Drizzle Studio is currently in Beta. If you find anything that is not working as expected or should be improved, feel free to create an issue on GitHub: https://github.com/drizzle-team/drizzle-kit-mirror/issues/new or write to us on Discord: https://discord.gg/WcRKz2FFxN
 
 Drizzle Studio is up and running on https://local.drizzle.studio
+error: update or delete on table "patients" violates foreign key constraint "FK_078cac8db3947a6affff0ff2cdc" on table "lab_sessions"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 309,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(3) is still referenced from table "lab_sessions".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'lab_sessions',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_078cac8db3947a6affff0ff2cdc',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: update or delete on table "lab_sessions" violates foreign key constraint "FK_4ab0b80bced0090523d6f802531" on table "patient_files"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 317,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(10) is still referenced from table "patient_files".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'patient_files',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_4ab0b80bced0090523d6f802531',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: update or delete on table "lab_sessions" violates foreign key constraint "FK_50d1d3328afd5098403eca87499" on table "fastq_files"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 310,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(3) is still referenced from table "fastq_files".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'fastq_files',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_50d1d3328afd5098403eca87499',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: update or delete on table "patients" violates foreign key constraint "FK_078cac8db3947a6affff0ff2cdc" on table "lab_sessions"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 309,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(3) is still referenced from table "lab_sessions".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'lab_sessions',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_078cac8db3947a6affff0ff2cdc',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: update or delete on table "patients" violates foreign key constraint "FK_078cac8db3947a6affff0ff2cdc" on table "lab_sessions"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 309,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(3) is still referenced from table "lab_sessions".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'lab_sessions',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_078cac8db3947a6affff0ff2cdc',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: update or delete on table "patients" violates foreign key constraint "FK_078cac8db3947a6affff0ff2cdc" on table "lab_sessions"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 309,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(3) is still referenced from table "lab_sessions".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'lab_sessions',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_078cac8db3947a6affff0ff2cdc',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: update or delete on table "patients" violates foreign key constraint "FK_078cac8db3947a6affff0ff2cdc" on table "lab_sessions"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 309,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(3) is still referenced from table "lab_sessions".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'lab_sessions',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_078cac8db3947a6affff0ff2cdc',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: update or delete on table "patients" violates foreign key constraint "FK_078cac8db3947a6affff0ff2cdc" on table "lab_sessions"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 309,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(3) is still referenced from table "lab_sessions".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'lab_sessions',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_078cac8db3947a6affff0ff2cdc',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}
+error: column "health_insurance_code" does not exist
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 121,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '79',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3716',
+  routine: 'errorMissingColumn'
+}
+error: update or delete on table "patients" violates foreign key constraint "FK_078cac8db3947a6affff0ff2cdc" on table "lab_sessions"
+    at /home/thangngo/git/bdgad/bdgad-auth/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async proxy (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:78818:26)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90561:26
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87597:9
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async cors2 (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:89238:9)
+    at async dispatch (/home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:87663:21)
+    at async /home/thangngo/git/bdgad/bdgad-auth/node_modules/drizzle-kit/bin.cjs:90513:9 {
+  length: 310,
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (id)=(14) is still referenced from table "lab_sessions".',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'lab_sessions',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'FK_078cac8db3947a6affff0ff2cdc',
+  file: 'ri_triggers.c',
+  line: '2612',
+  routine: 'ri_ReportViolation'
+}

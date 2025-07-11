@@ -540,12 +540,31 @@ export const updateProfile = async (c: ValidatedContext) => {
 
 export const getAllUser = async (c: ValidatedContext) => {
   try {
-    const roleId = c.req.query("roleId");
+    const roleCode = c.req.query("code");
 
     const conditions = [eq(users.status, "active")];
 
-    if (roleId) {
-      conditions.push(eq(userRoles.roleId, parseInt(roleId)));
+    if (roleCode) {
+      const role = await db
+        .select({
+          id: roles.id,
+          code: roles.code,
+        })
+        .from(roles)
+        .where(eq(roles.code, roleCode))
+        .limit(1);
+
+      const foundRole = role[0];
+      if (!foundRole) {
+        return c.json({
+          data: {
+            users: [],
+          },
+          message: `No users found for roleCode '${roleCode}'`,
+        });
+      }
+
+      conditions.push(eq(userRoles.roleId, foundRole.id));
     }
 
     const usersWithRoles = await db
@@ -569,7 +588,13 @@ export const getAllUser = async (c: ValidatedContext) => {
     });
   } catch (error) {
     console.error("Get all users error:", error);
-    return c.json(errorResponses.internalServerError, 500);
+    return c.json(
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message: "An error occurred while getting users.",
+      },
+      500
+    );
   }
 };
 

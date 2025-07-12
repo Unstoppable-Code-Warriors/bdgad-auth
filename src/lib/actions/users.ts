@@ -25,6 +25,7 @@ import {
 } from "@/lib/utils/email";
 import crypto from "crypto";
 import { sendNewPasswordEmail } from "@/backend/utils/emailService";
+import { phoneError } from "../utils/messageErrors";
 
 // Define the type for user with roles
 type UserWithRoles = Omit<typeof users.$inferSelect, "password"> & {
@@ -202,24 +203,8 @@ const validatePhone = (phone: string | undefined): void => {
 
   const trimmedPhone = phone.trim();
 
-  // Require country code prefix (starting with +)
-  if (!trimmedPhone.startsWith("+")) {
-    throw new Error("Please enter a country code starting with +");
-  }
-
-  // Basic phone number validation
-  if (trimmedPhone.length < 12 || trimmedPhone.length > 13) {
-    throw new Error(
-      "Phone number must be between 12-13 characters including country code"
-    );
-  }
-
-  if (/\s/.test(trimmedPhone)) {
-    throw new Error("Phone number cannot contain spaces");
-  }
-
-  if (!/^\+\d+$/.test(trimmedPhone)) {
-    throw new Error("Phone number can only contain + and digits");
+  if (!phoneError.pattern.test(trimmedPhone)) {
+    throw new Error(phoneError.message);
   }
 };
 

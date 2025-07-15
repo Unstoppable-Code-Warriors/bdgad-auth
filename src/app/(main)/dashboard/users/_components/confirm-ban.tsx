@@ -43,7 +43,7 @@ export default function ConfirmBan({ row, onClose }: ConfirmBanProps) {
         }
         
         if (trimmedValue.length > 200 || trimmedValue.length < 50) {
-          return "Lý do phải có từ 50 ký tự trở lên và không quá 200 ký tự";
+          return "Lý do phải có độ dài từ 50-200 ký tự";
         }
         
         return null;

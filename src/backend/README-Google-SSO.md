@@ -8,12 +8,14 @@ The auth service supports Google OAuth 2.0 authentication with a proper flow tha
 
 **Flow Overview:**
 
-1. Client app sends POST request to auth service with redirect URL
-2. Auth service returns Google OAuth URL
+1. Client app sends POST request to auth service with their callback URL
+2. Auth service stores client callback URL in state and returns Google OAuth URL
 3. Client app redirects user to Google OAuth URL
 4. User authenticates with Google
-5. Google redirects to auth service callback
+5. **Google redirects to auth service callback** (not client app)
 6. Auth service processes authentication and redirects back to client app with token
+
+**Important**: The `redirect_uri` in Google OAuth always points to the auth service callback endpoint (`/api/v1/auth/google/callback`). The client app's redirect URL is stored in the OAuth state parameter for later use.
 
 ## Prerequisites
 
@@ -23,6 +25,11 @@ Make sure you have the following environment variables configured:
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
+
+**Google OAuth App Configuration:**
+
+-   **Authorized redirect URI**: `https://yourdomain.com/api/v1/auth/google/callback`
+-   For development: `http://localhost:3000/api/v1/auth/google/callback`
 
 ## OAuth Flow (Recommended)
 
@@ -43,22 +50,22 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```json
 {
 	"data": {
-		"oauthUrl": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&state=...",
+		"oauthUrl": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=AUTH_SERVICE_CALLBACK&state=...",
 		"state": "generated_state_token"
 	},
 	"message": "Google OAuth URL generated successfully"
 }
 ```
 
-**Error Responses**:
+**Note**: The `redirect_uri` in the OAuth URL always points to the auth service callback, not your client app.
 
--   `OAUTH_NOT_CONFIGURED`: Google OAuth credentials not set
--   `INVALID_REDIRECT_URL`: Invalid redirectAfterLogin URL
--   `REDIRECT_URL_REQUIRED`: Missing redirectAfterLogin field
+### 2. Google OAuth Process
 
-### 2. Redirect User to Google
-
-After receiving the OAuth URL, redirect the user to the `oauthUrl` from the response.
+1. **Client redirects user** to the `oauthUrl`
+2. **User authenticates** with Google
+3. **Google redirects** to `https://yourdomain.com/api/v1/auth/google/callback?code=...&state=...`
+4. **Auth service processes** the callback and retrieves the original client callback URL from state
+5. **Auth service redirects** to client app with result
 
 ### 3. Handle Callback in Your App
 
@@ -74,6 +81,22 @@ https://yourapp.com/auth/callback?token=jwt_token_here&status=success
 
 ```
 https://yourapp.com/auth/callback?error=USER_NOT_FOUND&message=No+account+found
+```
+
+## State Management
+
+The OAuth state parameter serves two purposes:
+
+1. **Security**: Prevents CSRF attacks
+2. **Client Callback Storage**: Stores the client app's callback URL
+
+**State Flow**:
+
+```
+1. Client sends: redirectAfterLogin = "https://myapp.com/callback"
+2. Auth service generates state and stores: state -> "https://myapp.com/callback"
+3. Google OAuth uses: redirect_uri = "https://authservice.com/api/v1/auth/google/callback"
+4. After auth, auth service retrieves client URL from state and redirects to "https://myapp.com/callback?token=..."
 ```
 
 ## Legacy Token Validation
@@ -136,104 +159,34 @@ const handleAuthCallback = () => {
 		window.location.href = "/login"
 	}
 }
-
-// Button click handler
-document
-	.getElementById("google-login-btn")
-	.addEventListener("click", initiateGoogleLogin)
 ```
 
-### React Hook Example
+## Google OAuth Configuration
 
-```javascript
-import { useState } from "react"
+**Critical**: Your Google OAuth application must be configured with the correct redirect URI:
 
-const useGoogleAuth = () => {
-	const [loading, setLoading] = useState(false)
+**For Development**:
 
-	const initiateGoogleLogin = async (redirectUrl) => {
-		setLoading(true)
-		try {
-			const response = await fetch("/api/v1/auth/google", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ redirectAfterLogin: redirectUrl }),
-			})
-
-			const data = await response.json()
-
-			if (data.data?.oauthUrl) {
-				window.location.href = data.data.oauthUrl
-			} else {
-				throw new Error("Failed to get OAuth URL")
-			}
-		} catch (error) {
-			console.error("Google login error:", error)
-			setLoading(false)
-		}
-	}
-
-	return { initiateGoogleLogin, loading }
-}
-
-// Usage in component
-const LoginPage = () => {
-	const { initiateGoogleLogin, loading } = useGoogleAuth()
-
-	const handleGoogleLogin = () => {
-		const callbackUrl = `${window.location.origin}/auth/callback`
-		initiateGoogleLogin(callbackUrl)
-	}
-
-	return (
-		<button onClick={handleGoogleLogin} disabled={loading}>
-			{loading ? "Redirecting..." : "Sign in with Google"}
-		</button>
-	)
-}
+```
+http://localhost:3000/api/v1/auth/google/callback
 ```
 
-### Next.js Example
+**For Production**:
 
-```javascript
-// pages/auth/callback.js or app/auth/callback/page.js
-import { useEffect } from "react"
-import { useRouter } from "next/router"
-
-export default function AuthCallback() {
-	const router = useRouter()
-
-	useEffect(() => {
-		const { token, status, error, message } = router.query
-
-		if (status === "success" && token) {
-			localStorage.setItem("authToken", token)
-			router.push("/dashboard")
-		} else if (error) {
-			alert(`Login failed: ${message || error}`)
-			router.push("/login")
-		}
-	}, [router.query])
-
-	return <div>Processing authentication...</div>
-}
+```
+https://yourdomain.com/api/v1/auth/google/callback
 ```
 
-## Testing with GET (Development Only)
-
-For testing purposes, you can use a GET request:
-
-**Endpoint**: `GET /api/v1/auth/google?redirect_url=https://yourapp.com/callback`
-
-This will directly redirect to Google OAuth. **Not recommended for production.**
+**DO NOT** configure your client app URLs (like `https://yourapp.com/auth/callback`) in Google OAuth settings. These are handled internally by the auth service.
 
 ## Security Features
 
 1. **State Parameter**: Prevents CSRF attacks using cryptographically secure random state
-2. **URL Validation**: Validates redirect URLs to prevent open redirects
-3. **Token Expiration**: OAuth states expire after 10 minutes
-4. **User Verification**: Only allows login for existing, active users
-5. **JWT Security**: Creates secure JWT tokens with 7-day expiration
+2. **Proper Redirect URI**: Google OAuth always redirects to the auth service, preventing redirect hijacking
+3. **URL Validation**: Validates client redirect URLs to prevent open redirects
+4. **Token Expiration**: OAuth states expire after 10 minutes
+5. **User Verification**: Only allows login for existing, active users
+6. **JWT Security**: Creates secure JWT tokens with 7-day expiration
 
 ## Error Handling
 
@@ -250,6 +203,14 @@ This will directly redirect to Google OAuth. **Not recommended for production.**
 -   `OAUTH_ERROR`: Google OAuth process error
 -   `INVALID_STATE`: Invalid or expired OAuth state
 
+## Testing with GET (Development Only)
+
+For testing purposes, you can use a GET request:
+
+**Endpoint**: `GET /api/v1/auth/google?redirect_url=https://yourapp.com/callback`
+
+This will directly redirect to Google OAuth. **Not recommended for production.**
+
 ## Production Considerations
 
 1. **State Storage**: The current implementation uses in-memory storage for OAuth states. For production with multiple instances, use Redis or a database.
@@ -260,18 +221,25 @@ This will directly redirect to Google OAuth. **Not recommended for production.**
 
 4. **Rate Limiting**: Implement rate limiting on OAuth endpoints to prevent abuse.
 
-## Migration from Legacy Implementation
+5. **Google OAuth Quotas**: Monitor your Google OAuth API usage and quotas.
 
-If you're currently using the legacy `POST /auth/sso` endpoint:
+## Troubleshooting
 
-1. Update your frontend to use the new two-step flow
-2. The legacy endpoint remains available for backward compatibility
-3. The new flow provides better security and user experience
+**Common Issues**:
+
+1. **Redirect URI Mismatch**: Ensure Google OAuth app is configured with `https://yourdomain.com/api/v1/auth/google/callback`
+
+2. **Invalid State**: OAuth states expire after 10 minutes. If users take too long, they'll get an invalid state error.
+
+3. **User Not Found**: Users must exist in the database with their Google email address.
+
+4. **CORS Issues**: Ensure your auth service has proper CORS configuration for client app domains.
 
 ## Notes
 
+-   The `redirect_uri` parameter in Google OAuth **always** points to the auth service callback
+-   Client app callback URLs are stored in the OAuth state parameter
 -   Users must already exist in the database with their Google email
 -   The system does not automatically create new users via Google SSO
 -   Google profile pictures are stored in user metadata
 -   OAuth states are cleaned up automatically after 10 minutes
--   The callback URL must be configured in your Google OAuth application settings

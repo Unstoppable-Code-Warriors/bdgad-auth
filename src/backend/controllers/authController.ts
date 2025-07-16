@@ -752,8 +752,8 @@ export const initiateGoogleOAuth = async (c: Context) => {
 		// Clean up expired states
 		cleanupExpiredStates()
 
-		// Our callback URL (this service's callback endpoint)
-		const callbackUrl = `${
+		// FIXED: Auth service callback URL (this is always the same)
+		const authServiceCallbackUrl = `${
 			c.req.url.split("/auth/google")[0]
 		}/auth/google/callback`
 
@@ -761,7 +761,7 @@ export const initiateGoogleOAuth = async (c: Context) => {
 		const googleOAuthUrl =
 			`https://accounts.google.com/o/oauth2/v2/auth?` +
 			`client_id=${GOOGLE_CLIENT_ID}&` +
-			`redirect_uri=${encodeURIComponent(callbackUrl)}&` +
+			`redirect_uri=${encodeURIComponent(authServiceCallbackUrl)}&` +
 			`response_type=code&` +
 			`scope=openid%20email%20profile&` +
 			`state=${state}`
@@ -857,6 +857,8 @@ export const googleOAuthCallback = async (c: Context) => {
 		}
 
 		// Exchange code for tokens
+		const authServiceCallbackUrl = `${c.req.url.split("?")[0]}` // Current callback URL without query params
+
 		const tokenResponse = await fetch(
 			"https://oauth2.googleapis.com/token",
 			{
@@ -869,7 +871,7 @@ export const googleOAuthCallback = async (c: Context) => {
 					client_secret: GOOGLE_CLIENT_SECRET,
 					code,
 					grant_type: "authorization_code",
-					redirect_uri: c.req.url.split("?")[0], // Current callback URL
+					redirect_uri: authServiceCallbackUrl, // This must match the redirect_uri used in the authorization request
 				}),
 			}
 		)

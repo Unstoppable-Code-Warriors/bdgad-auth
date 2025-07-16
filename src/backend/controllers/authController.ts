@@ -856,7 +856,8 @@ export const googleOAuthCallback = async (c: Context) => {
 		}
 
 		// Exchange code for tokens
-		const authServiceCallbackUrl = `${c.req.url.split("?")[0]}` // Current callback URL without query params
+		// FIXED: Use the exact same callback URL that was used in the authorization request
+		const authServiceCallbackUrl = `${AUTH_URL}/api/v1/auth/google/callback`
 
 		const tokenResponse = await fetch(
 			"https://oauth2.googleapis.com/token",
@@ -878,10 +879,25 @@ export const googleOAuthCallback = async (c: Context) => {
 		if (!tokenResponse.ok) {
 			const errorData = await tokenResponse.json()
 			console.error("Token exchange error:", errorData)
+			console.error(
+				"Auth service callback URL used:",
+				authServiceCallbackUrl
+			)
+			console.error(
+				"Google Client ID:",
+				GOOGLE_CLIENT_ID ? "Present" : "Missing"
+			)
+			console.error("AUTH_URL:", AUTH_URL)
 			return c.json(
 				{
 					error: "TOKEN_EXCHANGE_FAILED",
 					message: "Failed to exchange authorization code for tokens",
+					debug: {
+						authServiceCallbackUrl,
+						authUrl: AUTH_URL,
+						hasClientId: !!GOOGLE_CLIENT_ID,
+						googleError: errorData,
+					},
 				},
 				400
 			)

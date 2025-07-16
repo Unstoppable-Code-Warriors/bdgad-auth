@@ -26,6 +26,7 @@ import { Context } from "hono"
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key"
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
+const AUTH_URL = process.env.AUTH_URL
 
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
 	console.warn("Google OAuth credentials not configured")
@@ -753,9 +754,7 @@ export const initiateGoogleOAuth = async (c: Context) => {
 		cleanupExpiredStates()
 
 		// FIXED: Auth service callback URL (this is always the same)
-		const authServiceCallbackUrl = `${
-			c.req.url.split("/auth/google")[0]
-		}/auth/google/callback`
+		const authServiceCallbackUrl = `${AUTH_URL}/api/v1/auth/google/callback`
 
 		// Generate Google OAuth URL
 		const googleOAuthUrl =

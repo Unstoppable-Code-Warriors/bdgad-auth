@@ -1,71 +1,71 @@
-import { Hono } from "hono";
+import { Hono } from "hono"
 import {
-  login,
-  getUserInfo,
-  verifyToken,
-  changePassword,
-  forgotPassword,
-  resetPassword,
-  updateProfile,
-  googleLogin,
-  getAllUser,
-} from "../controllers/authController";
+	login,
+	getUserInfo,
+	verifyToken,
+	changePassword,
+	forgotPassword,
+	resetPassword,
+	updateProfile,
+	googleLogin,
+	getAllUser,
+	googleOAuthCallback,
+	initiateGoogleOAuth,
+} from "../controllers/authController"
 import {
-  validateLogin,
-  validateTokenParam,
-  validateChangePassword,
-  validateForgotPassword,
-  validateResetPassword,
-  validateUpdateProfile,
-  validateGoogleLogin,
-} from "../middleware/validationMiddleware";
-import { jwtAuth } from "../middleware/jwtMiddleware";
+	validateLogin,
+	validateTokenParam,
+	validateChangePassword,
+	validateForgotPassword,
+	validateResetPassword,
+	validateUpdateProfile,
+	validateGoogleLogin,
+	validateGoogleOAuthInit,
+} from "../middleware/validationMiddleware"
+import { jwtAuth } from "../middleware/jwtMiddleware"
 
-const authRoutes = new Hono();
+const authRoutes = new Hono()
 
 // POST /auth/login - Login endpoint with validation
-authRoutes.post("/login", validateLogin, login);
+authRoutes.post("/login", validateLogin, login)
 
 // GET /auth/me - Get current user information
-authRoutes.get("/me", jwtAuth, getUserInfo);
+authRoutes.get("/me", jwtAuth, getUserInfo)
 
 // GET /auth/verify/:token - Verify JWT token with validation
-authRoutes.get("/verify/:token", validateTokenParam, verifyToken);
+authRoutes.get("/verify/:token", validateTokenParam, verifyToken)
 
-// PUT /auth/change-password - Change user password
+// PUT /auth/change-password - Change password with validation and JWT auth
 authRoutes.put(
-  "/change-password",
-  jwtAuth,
-  validateChangePassword,
-  changePassword
-);
+	"/change-password",
+	jwtAuth,
+	validateChangePassword,
+	changePassword
+)
 
-// POST /auth/forgot-password - Request password reset
-authRoutes.post("/forgot-password", validateForgotPassword, forgotPassword);
+// POST /auth/forgot-password - Forgot password endpoint with validation
+authRoutes.post("/forgot-password", validateForgotPassword, forgotPassword)
 
-// POST /auth/reset-password - Reset password with token
-authRoutes.post("/reset-password", validateResetPassword, resetPassword);
+// POST /auth/reset-password - Reset password endpoint with validation
+authRoutes.post("/reset-password", validateResetPassword, resetPassword)
 
-// POST /auth/change-password - Change user password
-authRoutes.post(
-  "/change-password",
-  jwtAuth,
-  validateChangePassword,
-  changePassword
-);
+// PUT /auth/update-profile - Update profile endpoint with validation and JWT auth
+authRoutes.put("/update-profile", jwtAuth, validateUpdateProfile, updateProfile)
 
-// PUT /auth/update-profile - Update user profile
-authRoutes.put(
-  "/update-profile",
-  jwtAuth,
-  validateUpdateProfile,
-  updateProfile
-);
+// GET /auth/users - Get all users with optional role filtering
+authRoutes.get("/users", getAllUser)
 
-// POST /auth/google-login - Google login
-authRoutes.post("/sso", validateGoogleLogin, googleLogin);
+// Google OAuth routes
+// POST /auth/google - Initiate Google OAuth flow (recommended)
+authRoutes.post("/google", validateGoogleOAuthInit, initiateGoogleOAuth)
 
-// GET /auth/users - Get all users
-authRoutes.get("/users", jwtAuth, getAllUser);
+// GET /auth/google - Initiate Google OAuth flow (fallback for testing)
+authRoutes.get("/google", initiateGoogleOAuth)
 
-export default authRoutes;
+// GET /auth/google/callback - Handle Google OAuth callback
+authRoutes.get("/google/callback", googleOAuthCallback)
+
+// POST /auth/sso - Legacy Google login (keep for backward compatibility)
+authRoutes.post("/sso", validateGoogleLogin, googleLogin)
+
+export default authRoutes

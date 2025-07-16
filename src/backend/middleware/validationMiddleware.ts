@@ -7,6 +7,7 @@ import {
 	updateProfileSchema,
 	createValidator,
 	googleLoginSchema,
+	googleOAuthInitSchema,
 } from "../types/validation"
 
 // Export validation middleware for use in routes
@@ -29,3 +30,7 @@ export const validateUpdateProfile = createValidator(
 	"json"
 )
 export const validateGoogleLogin = createValidator(googleLoginSchema, "json")
+export const validateGoogleOAuthInit = createValidator(
+	googleOAuthInitSchema,
+	"json"
+)

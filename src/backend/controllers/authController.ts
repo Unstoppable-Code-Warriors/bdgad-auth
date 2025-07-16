@@ -800,6 +800,28 @@ export const googleOAuthCallback = async (c: Context) => {
 		const { code, state, error: oauthError } = c.req.query()
 
 		if (oauthError) {
+			// Check if we have a valid state to get the redirect URL
+			if (state) {
+				const stateData = oauthStates.get(state)
+				if (
+					stateData &&
+					Date.now() - stateData.timestamp <= 10 * 60 * 1000
+				) {
+					// Remove used state
+					oauthStates.delete(state)
+
+					// Redirect to client app with error
+					const errorUrl = new URL(stateData.redirectUrl)
+					errorUrl.searchParams.set("error", "OAUTH_DENIED")
+					errorUrl.searchParams.set(
+						"message",
+						"User denied Google OAuth permission"
+					)
+					return c.redirect(errorUrl.toString())
+				}
+			}
+
+			// Fallback to JSON response if no valid state
 			return c.json(
 				{
 					error: "OAUTH_ERROR",
@@ -810,6 +832,27 @@ export const googleOAuthCallback = async (c: Context) => {
 		}
 
 		if (!code) {
+			// Check if we have a valid state to get the redirect URL
+			if (state) {
+				const stateData = oauthStates.get(state)
+				if (
+					stateData &&
+					Date.now() - stateData.timestamp <= 10 * 60 * 1000
+				) {
+					// Remove used state
+					oauthStates.delete(state)
+
+					// Redirect to client app with error
+					const errorUrl = new URL(stateData.redirectUrl)
+					errorUrl.searchParams.set("error", "OAUTH_CODE_MISSING")
+					errorUrl.searchParams.set(
+						"message",
+						"Authorization code is missing"
+					)
+					return c.redirect(errorUrl.toString())
+				}
+			}
+
 			return c.json(
 				{
 					error: "OAUTH_CODE_MISSING",
@@ -846,13 +889,11 @@ export const googleOAuthCallback = async (c: Context) => {
 
 		// Check if state is not expired (10 minutes)
 		if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
-			return c.json(
-				{
-					error: "EXPIRED_STATE",
-					message: "OAuth state has expired",
-				},
-				400
-			)
+			// Redirect to client app with error
+			const errorUrl = new URL(stateData.redirectUrl)
+			errorUrl.searchParams.set("error", "EXPIRED_STATE")
+			errorUrl.searchParams.set("message", "OAuth state has expired")
+			return c.redirect(errorUrl.toString())
 		}
 
 		// Exchange code for tokens
@@ -888,19 +929,15 @@ export const googleOAuthCallback = async (c: Context) => {
 				GOOGLE_CLIENT_ID ? "Present" : "Missing"
 			)
 			console.error("AUTH_URL:", AUTH_URL)
-			return c.json(
-				{
-					error: "TOKEN_EXCHANGE_FAILED",
-					message: "Failed to exchange authorization code for tokens",
-					debug: {
-						authServiceCallbackUrl,
-						authUrl: AUTH_URL,
-						hasClientId: !!GOOGLE_CLIENT_ID,
-						googleError: errorData,
-					},
-				},
-				400
+
+			// Redirect to client app with error
+			const errorUrl = new URL(stateData.redirectUrl)
+			errorUrl.searchParams.set("error", "TOKEN_EXCHANGE_FAILED")
+			errorUrl.searchParams.set(
+				"message",
+				"Failed to exchange authorization code for tokens"
 			)
+			return c.redirect(errorUrl.toString())
 		}
 
 		const tokenData = await tokenResponse.json()
@@ -917,26 +954,28 @@ export const googleOAuthCallback = async (c: Context) => {
 		)
 
 		if (!userInfoResponse.ok) {
-			return c.json(
-				{
-					error: "USER_INFO_FAILED",
-					message: "Failed to get user information from Google",
-				},
-				400
+			// Redirect to client app with error
+			const errorUrl = new URL(stateData.redirectUrl)
+			errorUrl.searchParams.set("error", "USER_INFO_FAILED")
+			errorUrl.searchParams.set(
+				"message",
+				"Failed to get user information from Google"
 			)
+			return c.redirect(errorUrl.toString())
 		}
 
 		const googleUser = await userInfoResponse.json()
 		const { email, name, picture } = googleUser
 
 		if (!email) {
-			return c.json(
-				{
-					error: "EMAIL_NOT_PROVIDED",
-					message: "Google account does not have email information",
-				},
-				400
+			// Redirect to client app with error
+			const errorUrl = new URL(stateData.redirectUrl)
+			errorUrl.searchParams.set("error", "EMAIL_NOT_PROVIDED")
+			errorUrl.searchParams.set(
+				"message",
+				"Google account does not have email information"
 			)
+			return c.redirect(errorUrl.toString())
 		}
 
 		// Find user in database
@@ -1021,6 +1060,34 @@ export const googleOAuthCallback = async (c: Context) => {
 		return c.redirect(successUrl.toString())
 	} catch (error) {
 		console.error("Google OAuth callback error:", error)
+
+		// Try to get state and redirect if possible
+		try {
+			const { state } = c.req.query()
+			if (state) {
+				const stateData = oauthStates.get(state)
+				if (
+					stateData &&
+					Date.now() - stateData.timestamp <= 10 * 60 * 1000
+				) {
+					// Remove used state
+					oauthStates.delete(state)
+
+					// Redirect to client app with error
+					const errorUrl = new URL(stateData.redirectUrl)
+					errorUrl.searchParams.set("error", "OAUTH_CALLBACK_FAILED")
+					errorUrl.searchParams.set(
+						"message",
+						"Failed to process Google OAuth callback"
+					)
+					return c.redirect(errorUrl.toString())
+				}
+			}
+		} catch (redirectError) {
+			console.error("Failed to redirect on error:", redirectError)
+		}
+
+		// Fallback to JSON response if redirect is not possible
 		return c.json(
 			{
 				error: "OAUTH_CALLBACK_FAILED",

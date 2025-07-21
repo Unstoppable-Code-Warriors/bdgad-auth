@@ -63,6 +63,11 @@ export const errorResponses = {
         status: 500,
         code: "EMAIL_SEND_FAILED",
         message: "Failed to send password reset email",
+    },
+    duplicatePhone: {
+        status: 409,
+        code: "DUPLICATE_PHONE",
+        message: "Phone number is already in use by another user",
     }
 }
 

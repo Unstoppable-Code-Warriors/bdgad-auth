@@ -98,7 +98,7 @@ export const sendPasswordEmailsToUsers = async (
             </p>
           </div>
         `,
-      }
+      };
 
       return transporter.sendMail(mailOptions);
     });
@@ -163,10 +163,7 @@ Trân trọng,
   }
 };
 
-export const sendBanNotificationEmail = async (
-  email: string,
-  name: string
-) => {
+export const sendBanNotificationEmail = async (email: string, name: string) => {
   try {
     const transporter = createTransporter();
 

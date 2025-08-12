@@ -1,765 +1,933 @@
-"use server"
+"use server";
 
-import { db } from "@/db/drizzle"
-import { users, userRoles, roles, passwordResetTokens } from "@/db/schema"
+import { db } from "@/db/drizzle";
+import { users, userRoles, roles, passwordResetTokens } from "@/db/schema";
 import {
-	count,
-	eq,
-	getTableColumns,
-	or,
-	ilike,
-	inArray,
-	and,
-	not,
-	sql,
-	desc,
-	isNull,
-} from "drizzle-orm"
-import { withAuth } from "@/lib/utils/auth"
-import bcrypt from "bcryptjs"
-import { FetchLimit } from "../constants"
+  count,
+  eq,
+  getTableColumns,
+  or,
+  ilike,
+  inArray,
+  and,
+  not,
+  sql,
+  desc,
+  isNull,
+} from "drizzle-orm";
+import { withAuth } from "@/lib/utils/auth";
+import bcrypt from "bcryptjs";
+import { FetchLimit } from "../constants";
 import {
-	sendPasswordEmailsToUsers,
-	sendRoleChangeEmail,
-	sendDeletionEmail,
-} from "@/lib/utils/email"
-import crypto from "crypto"
-import { sendNewPasswordEmail } from "@/backend/utils/emailService"
-import { phoneError } from "../utils/messageErrors"
+  sendPasswordEmailsToUsers,
+  sendRoleChangeEmail,
+  sendDeletionEmail,
+  sendRecoveryEmail,
+} from "@/lib/utils/email";
+import crypto from "crypto";
+import { sendNewPasswordEmail } from "@/backend/utils/emailService";
+import { phoneError } from "../utils/messageErrors";
 
 // Define the type for user with roles
 type UserWithRoles = Omit<typeof users.$inferSelect, "password"> & {
-	roles: Array<{
-		id: number
-		name: string
-		description: string
-	}>
-}
+  roles: Array<{
+    id: number;
+    name: string;
+    description: string;
+  }>;
+};
 
 // Type for batch user creation input
 export type CreateUserInput = {
-	email: string
-	name: string
-	metadata: Record<string, any>
-	roleIds?: number[]
-	status?: "active" | "inactive"
-}
+  email: string;
+  name: string;
+  metadata: Record<string, any>;
+  roleIds?: number[];
+  status?: "active" | "inactive";
+};
 
 // Type for user creation result with password
 type UserCreationResult = {
-	user: Omit<typeof users.$inferSelect, "password">
-	token: string
-	redirectUrl?: string
-}
+  user: Omit<typeof users.$inferSelect, "password">;
+  token: string;
+  redirectUrl?: string;
+};
 
 async function getUsersCore({
-	limit = FetchLimit.USERS,
-	page = 1,
-	search,
+  limit = FetchLimit.USERS,
+  page = 1,
+  search,
 }: {
-	limit?: number
-	page?: number
-	search?: string
+  limit?: number;
+  page?: number;
+  search?: string;
 } = {}) {
-	try {
-		console.log("Validating pagination parameters:", { limit, page })
+  try {
+    console.log("Validating pagination parameters:", { limit, page });
 
-		// Validate limit if provided
-		if (limit !== undefined) {
-			if (typeof limit !== "number") {
-				throw new Error("Limit must be a number")
-			}
-			if (limit <= 0) {
-				throw new Error("Limit must be greater than 0")
-			}
-		}
+    // Validate limit if provided
+    if (limit !== undefined) {
+      if (typeof limit !== "number") {
+        throw new Error("Limit must be a number");
+      }
+      if (limit <= 0) {
+        throw new Error("Limit must be greater than 0");
+      }
+    }
 
-		// Validate page if provided
-		if (page !== undefined) {
-			if (typeof page !== "number") {
-				throw new Error("Page must be a number")
-			}
-			if (page <= 0) {
-				throw new Error("Page must be greater than 0")
-			}
-		}
+    // Validate page if provided
+    if (page !== undefined) {
+      if (typeof page !== "number") {
+        throw new Error("Page must be a number");
+      }
+      if (page <= 0) {
+        throw new Error("Page must be greater than 0");
+      }
+    }
 
-		const offset = (page - 1) * limit
+    const offset = (page - 1) * limit;
 
-		const { password, ...userColumns } = getTableColumns(users)
+    const { password, ...userColumns } = getTableColumns(users);
 
-		const result = await db.transaction(async (tx) => {
-			// Build the base query
-			const baseQuery = tx
-				.select({
-					...userColumns,
-					roleId: userRoles.roleId,
-					roleName: roles.name,
-					roleDescription: roles.description,
-				})
-				.from(users)
-				.leftJoin(userRoles, eq(users.id, userRoles.userId))
-				.leftJoin(roles, eq(userRoles.roleId, roles.id))
-				.orderBy(desc(users.createdAt))
+    const result = await db.transaction(async (tx) => {
+      // Build the base query
+      const baseQuery = tx
+        .select({
+          ...userColumns,
+          roleId: userRoles.roleId,
+          roleName: roles.name,
+          roleDescription: roles.description,
+        })
+        .from(users)
+        .leftJoin(userRoles, eq(users.id, userRoles.userId))
+        .leftJoin(roles, eq(userRoles.roleId, roles.id))
+        .orderBy(desc(users.createdAt));
 
-			// Get users with their roles
-			const usersWithRoles = search
-				? await baseQuery
-						.where(
-							and(
-								ilike(users.email, `%${search}%`),
-								isNull(users.deletedAt)
-							)
-						)
-						.limit(limit)
-						.offset(offset)
-				: await baseQuery
-						.where(isNull(users.deletedAt))
-						.limit(limit)
-						.offset(offset)
+      // Get users with their roles
+      const usersWithRoles = search
+        ? await baseQuery
+            .where(
+              and(ilike(users.email, `%${search}%`), isNull(users.deletedAt))
+            )
+            .limit(limit)
+            .offset(offset)
+        : await baseQuery
+            .where(isNull(users.deletedAt))
+            .limit(limit)
+            .offset(offset);
 
-			// Group roles by user
-			const userMap = new Map<number, UserWithRoles>()
+      // Group roles by user
+      const userMap = new Map<number, UserWithRoles>();
 
-			usersWithRoles.forEach((row) => {
-				const userId = row.id
-				if (!userMap.has(userId)) {
-					const { roleId, roleName, roleDescription, ...userData } =
-						row
-					userMap.set(userId, {
-						...userData,
-						roles: [],
-					})
-				}
+      usersWithRoles.forEach((row) => {
+        const userId = row.id;
+        if (!userMap.has(userId)) {
+          const { roleId, roleName, roleDescription, ...userData } = row;
+          userMap.set(userId, {
+            ...userData,
+            roles: [],
+          });
+        }
 
-				// Add role if it exists (leftJoin might return null roles for users without roles)
-				if (row.roleId && row.roleName && row.roleDescription) {
-					userMap.get(userId)!.roles.push({
-						id: row.roleId,
-						name: row.roleName,
-						description: row.roleDescription,
-					})
-				}
-			})
+        // Add role if it exists (leftJoin might return null roles for users without roles)
+        if (row.roleId && row.roleName && row.roleDescription) {
+          userMap.get(userId)!.roles.push({
+            id: row.roleId,
+            name: row.roleName,
+            description: row.roleDescription,
+          });
+        }
+      });
 
-			const userList: UserWithRoles[] = Array.from(userMap.values())
+      const userList: UserWithRoles[] = Array.from(userMap.values());
 
-			// Get total count with search condition
-			const totalResult = search
-				? await tx
-						.select({ count: count() })
-						.from(users)
-						.where(
-							and(
-								ilike(users.email, `%${search}%`),
-								isNull(users.deletedAt)
-							)
-						)
-				: await tx
-						.select({ count: count() })
-						.from(users)
-						.where(isNull(users.deletedAt))
+      // Get total count with search condition
+      const totalResult = search
+        ? await tx
+            .select({ count: count() })
+            .from(users)
+            .where(
+              and(ilike(users.email, `%${search}%`), isNull(users.deletedAt))
+            )
+        : await tx
+            .select({ count: count() })
+            .from(users)
+            .where(isNull(users.deletedAt));
 
-			return {
-				users: userList,
-				total: totalResult[0].count,
-				totalPages: Math.ceil(totalResult[0].count / limit),
-			}
-		})
+      return {
+        users: userList,
+        total: totalResult[0].count,
+        totalPages: Math.ceil(totalResult[0].count / limit),
+      };
+    });
 
-		return result
-	} catch (error) {
-		console.error("Error in getUsersCore:", error)
-		throw error // Re-throw the error to be handled by the caller
-	}
+    return result;
+  } catch (error) {
+    console.error("Error in getUsersCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
 
-export const getUsers = withAuth(getUsersCore)
-export type GetUsersResult = Awaited<ReturnType<typeof getUsers>>
+export const getUsers = withAuth(getUsersCore);
+export type GetUsersResult = Awaited<ReturnType<typeof getUsers>>;
 
 // Validation functions
 const validateEmail = (email: string): void => {
-	console.log("Validating email:", email)
-	if (!email || typeof email !== "string") {
-		throw new Error("Email is required")
-	}
-	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-	if (!emailRegex.test(email.trim())) {
-		throw new Error("Invalid email format")
-	}
-}
+  console.log("Validating email:", email);
+  if (!email || typeof email !== "string") {
+    throw new Error("Email is required");
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    throw new Error("Invalid email format");
+  }
+};
 
 const validateName = (name: string): void => {
-	console.log("Validating name:", name)
-	if (!name || typeof name !== "string") {
-		throw new Error("Name is required")
-	}
-	const trimmedName = name.trim()
-	if (trimmedName.length < 1 || trimmedName.length > 50) {
-		throw new Error("Name must be between 1 and 50 characters")
-	}
-	// Allow Vietnamese characters, letters, and single spaces
-	if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
-		throw new Error(
-			"Name can only contain letters (including Vietnamese) and single spaces between words"
-		)
-	}
-}
+  console.log("Validating name:", name);
+  if (!name || typeof name !== "string") {
+    throw new Error("Name is required");
+  }
+  const trimmedName = name.trim();
+  if (trimmedName.length < 1 || trimmedName.length > 50) {
+    throw new Error("Name must be between 1 and 50 characters");
+  }
+  // Allow Vietnamese characters, letters, and single spaces
+  if (!/^[a-zA-ZÀ-ỹ]+( [a-zA-ZÀ-ỹ]+)*$/.test(trimmedName)) {
+    throw new Error(
+      "Name can only contain letters (including Vietnamese) and single spaces between words"
+    );
+  }
+};
 
 const validatePhone = (phone: string | undefined): void => {
-	if (!phone) return // Phone is optional
+  if (!phone) return; // Phone is optional
 
-	const trimmedPhone = phone.trim()
+  const trimmedPhone = phone.trim();
 
-	if (!phoneError.pattern.test(trimmedPhone)) {
-		throw new Error(phoneError.message)
-	}
-}
+  if (!phoneError.pattern.test(trimmedPhone)) {
+    throw new Error(phoneError.message);
+  }
+};
 
 const validateAddress = (address: string | undefined): void => {
-	if (!address) return // Address is optional
-	console.log("Validating address:", address)
-	if (address.length > 200) {
-		throw new Error("Address must not exceed 200 characters")
-	}
-	if (!/^[a-zA-ZÀ-ỹ0-9\s\(\)\|\/\-\,\.]+$/.test(address)) {
-		throw new Error(
-			"Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: ( ) | / - , ."
-		)
-	}
-}
+  if (!address) return; // Address is optional
+  console.log("Validating address:", address);
+  if (address.length > 200) {
+    throw new Error("Address must not exceed 200 characters");
+  }
+  if (!/^[a-zA-ZÀ-ỹ0-9\s\(\)\|\/\-\,\.]+$/.test(address)) {
+    throw new Error(
+      "Address can only contain letters (including Vietnamese), numbers, spaces, and the following special characters: ( ) | / - , ."
+    );
+  }
+};
 
 const validateRoleIds = async (roleIds: number[]): Promise<void> => {
-	console.log("Validating role IDs:", roleIds)
-	if (!roleIds || roleIds.length === 0) {
-		throw new Error("At least one role is required")
-	}
+  console.log("Validating role IDs:", roleIds);
+  if (!roleIds || roleIds.length === 0) {
+    throw new Error("At least one role is required");
+  }
 
-	const existingRoles = await db
-		.select({ id: roles.id })
-		.from(roles)
-		.where(inArray(roles.id, roleIds))
+  const existingRoles = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(inArray(roles.id, roleIds));
 
-	const existingRoleIds = existingRoles.map((role) => role.id)
-	const invalidRoleIds = roleIds.filter((id) => !existingRoleIds.includes(id))
+  const existingRoleIds = existingRoles.map((role) => role.id);
+  const invalidRoleIds = roleIds.filter((id) => !existingRoleIds.includes(id));
 
-	if (invalidRoleIds.length > 0) {
-		throw new Error(`Invalid role IDs: ${invalidRoleIds.join(", ")}`)
-	}
-}
+  if (invalidRoleIds.length > 0) {
+    throw new Error(`Invalid role IDs: ${invalidRoleIds.join(", ")}`);
+  }
+};
 
 const validateStatus = (status: string): void => {
-	console.log("Validating status:", status)
-	if (!["active", "inactive"].includes(status)) {
-		throw new Error("Status must be either 'active' or 'inactive'")
-	}
-}
+  console.log("Validating status:", status);
+  if (!["active", "inactive"].includes(status)) {
+    throw new Error("Status must be either 'active' or 'inactive'");
+  }
+};
 
 // Add new validation function for checking duplicate phone numbers
 export const validatePhoneUniqueness = async (
-	phone: string,
-	userId: number
+  phone: string,
+  userId: number
 ): Promise<void> => {
-	console.log("Validating phone uniqueness:", phone)
-	const existingUser = await db
-		.select({ id: users.id })
-		.from(users)
-		.where(
-			and(
-				eq(sql`${users.metadata}->>'phone'`, phone),
-				not(eq(users.id, userId))
-			)
-		)
-		.limit(1)
+  console.log("Validating phone uniqueness:", phone);
+  const existingUser = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(
+      and(
+        eq(sql`${users.metadata}->>'phone'`, phone),
+        not(eq(users.id, userId))
+      )
+    )
+    .limit(1);
 
-	if (existingUser.length > 0) {
-		throw new Error("Phone number already exists in the system")
-	}
-}
+  if (existingUser.length > 0) {
+    throw new Error("Phone number already exists in the system");
+  }
+};
 
 async function createUserCore({
-	email,
-	name,
-	metadata,
-	roleIds = [],
-	status = "active",
+  email,
+  name,
+  metadata,
+  roleIds = [],
+  status = "active",
 }: {
-	email: string
-	name: string
-	metadata: Record<string, any>
-	roleIds?: number[]
-	status?: "active" | "inactive"
+  email: string;
+  name: string;
+  metadata: Record<string, any>;
+  roleIds?: number[];
+  status?: "active" | "inactive";
 }) {
-	try {
-		// Validate email format
-		validateEmail(email)
+  try {
+    // Validate email format
+    validateEmail(email);
 
-		// Check if email already exists
-		const existingUser = await db
-			.select({ id: users.id })
-			.from(users)
-			.where(eq(users.email, email))
-			.limit(1)
+    // Check if email already exists
+    const existingUser = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-		if (existingUser.length > 0) {
-			throw new Error("Email already exists in the system")
-		}
+    if (existingUser.length > 0) {
+      throw new Error("Email already exists in the system");
+    }
 
-		// Validate name
-		validateName(name)
+    // Validate name
+    validateName(name);
 
-		// Validate phone if present
-		if (metadata?.phone) {
-			validatePhone(metadata.phone)
-			// Check if phone number already exists
-			await validatePhoneUniqueness(metadata.phone, 0) // Pass 0 as userId since this is a new user
-		}
+    // Validate phone if present
+    if (metadata?.phone) {
+      validatePhone(metadata.phone);
+      // Check if phone number already exists
+      await validatePhoneUniqueness(metadata.phone, 0); // Pass 0 as userId since this is a new user
+    }
 
-		// Validate address if present
-		validateAddress(metadata?.address)
+    // Validate address if present
+    validateAddress(metadata?.address);
 
-		// Validate role IDs
-		await validateRoleIds(roleIds)
+    // Validate role IDs
+    await validateRoleIds(roleIds);
 
-		// Validate status
-		validateStatus(status)
+    // Validate status
+    validateStatus(status);
 
-		// Generate a random password
-		const generateRandomPassword = () => {
-			const chars =
-				"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
-			let password = ""
-			for (let i = 0; i < 12; i++) {
-				password += chars.charAt(
-					Math.floor(Math.random() * chars.length)
-				)
-			}
-			return password
-		}
+    // Generate a random password
+    const generateRandomPassword = () => {
+      const chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+      let password = "";
+      for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
 
-		const generatedPassword = generateRandomPassword()
-		const hashedPassword = await bcrypt.hash(generatedPassword, 12)
+    const generatedPassword = generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(generatedPassword, 12);
 
-		const result = await db.transaction(async (tx) => {
-			// Create the user
-			const [{ password: hashedDbPassword, ...newUser }] = await tx
-				.insert(users)
-				.values({
-					email,
-					password: hashedPassword,
-					name,
-					metadata,
-					status,
-					updatedAt: new Date(),
-				})
-				.returning()
+    const result = await db.transaction(async (tx) => {
+      // Create the user
+      const [{ password: hashedDbPassword, ...newUser }] = await tx
+        .insert(users)
+        .values({
+          email,
+          password: hashedPassword,
+          name,
+          metadata,
+          status,
+          updatedAt: new Date(),
+        })
+        .returning();
 
-			// Assign roles if provided
-			if (roleIds.length > 0) {
-				await tx.insert(userRoles).values(
-					roleIds.map((roleId) => ({
-						userId: newUser.id,
-						roleId,
-					}))
-				)
-			}
+      // Assign roles if provided
+      if (roleIds.length > 0) {
+        await tx.insert(userRoles).values(
+          roleIds.map((roleId) => ({
+            userId: newUser.id,
+            roleId,
+          }))
+        );
+      }
 
-			// Generate secure random token
-			const resetToken = crypto.randomBytes(32).toString("hex")
-			const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+      // Generate secure random token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-			console.log("new id user:", newUser.id)
-			// Store reset token in database
-			await tx.insert(passwordResetTokens).values({
-				userId: newUser.id,
-				token: resetToken,
-				expiresAt,
-				used: "false",
-			})
-			const redirectUrl = "https://bdgad.bio/auth"
+      console.log("new id user:", newUser.id);
+      // Store reset token in database
+      await tx.insert(passwordResetTokens).values({
+        userId: newUser.id,
+        token: resetToken,
+        expiresAt,
+        used: "false",
+      });
+      const redirectUrl = "https://bdgad.bio/auth";
 
-			try {
-				await sendNewPasswordEmail(
-					redirectUrl,
-					newUser.email,
-					resetToken,
-					newUser.name
-				)
-			} catch (emailError) {
-				console.error("Failed to send new password email:", emailError)
-			}
+      try {
+        await sendNewPasswordEmail(
+          redirectUrl,
+          newUser.email,
+          resetToken,
+          newUser.name
+        );
+      } catch (emailError) {
+        console.error("Failed to send new password email:", emailError);
+      }
 
-			return newUser
-		})
+      return newUser;
+    });
 
-		return result
-	} catch (error) {
-		console.error("Error in createUserCore:", error)
-		throw error // Re-throw the error to be handled by the caller
-	}
+    return result;
+  } catch (error) {
+    console.error("Error in createUserCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
 
-export const createUser = withAuth(createUserCore)
-export type CreateUserResult = Awaited<ReturnType<typeof createUser>>
+export const createUser = withAuth(createUserCore);
+export type CreateUserResult = Awaited<ReturnType<typeof createUser>>;
 
 async function createUsersCore(userInputs: CreateUserInput[]) {
-	try {
-		// Validate all users first before proceeding with any creation
-		for (const userInput of userInputs) {
-			const {
-				email,
-				name,
-				metadata,
-				roleIds = [],
-				status = "active",
-			} = userInput
+  try {
+    // Validate all users first before proceeding with any creation
+    for (const userInput of userInputs) {
+      const {
+        email,
+        name,
+        metadata,
+        roleIds = [],
+        status = "active",
+      } = userInput;
 
-			// Validate email format
-			validateEmail(email)
+      // Validate email format
+      validateEmail(email);
 
-			// Check if email already exists
-			const existingUser = await db
-				.select({ id: users.id })
-				.from(users)
-				.where(eq(users.email, email))
-				.limit(1)
+      // Check if email already exists
+      const existingUser = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
 
-			if (existingUser.length > 0) {
-				throw new Error(`Email already exists in the system: ${email}`)
-			}
+      if (existingUser.length > 0) {
+        throw new Error(`Email already exists in the system: ${email}`);
+      }
 
-			// Validate name
-			validateName(name)
+      // Validate name
+      validateName(name);
 
-			// Validate phone if present
-			validatePhone(metadata?.phone)
+      // Validate phone if present
+      validatePhone(metadata?.phone);
 
-			// Validate address if present
-			validateAddress(metadata?.address)
+      // Validate address if present
+      validateAddress(metadata?.address);
 
-			// Validate role IDs
-			await validateRoleIds(roleIds)
+      // Validate role IDs
+      await validateRoleIds(roleIds);
 
-			// Validate status
-			validateStatus(status)
-		}
+      // Validate status
+      validateStatus(status);
+    }
 
-		// Generate random password function
-		const generateRandomPassword = () => {
-			const chars =
-				"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
-			let password = ""
-			for (let i = 0; i < 12; i++) {
-				password += chars.charAt(
-					Math.floor(Math.random() * chars.length)
-				)
-			}
-			return password
-		}
+    // Generate random password function
+    const generateRandomPassword = () => {
+      const chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+      let password = "";
+      for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return password;
+    };
 
-		const results: UserCreationResult[] = []
+    const results: UserCreationResult[] = [];
 
-		// Process each user in a transaction
-		const finalResults = await db.transaction(async (tx) => {
-			for (const userInput of userInputs) {
-				const {
-					email,
-					name,
-					metadata,
-					roleIds = [],
-					status = "active",
-				} = userInput
+    // Process each user in a transaction
+    const finalResults = await db.transaction(async (tx) => {
+      for (const userInput of userInputs) {
+        const {
+          email,
+          name,
+          metadata,
+          roleIds = [],
+          status = "active",
+        } = userInput;
 
-				// Generate password for this user
-				const generatedPassword = generateRandomPassword()
-				const hashedPassword = await bcrypt.hash(generatedPassword, 12)
+        // Generate password for this user
+        const generatedPassword = generateRandomPassword();
+        const hashedPassword = await bcrypt.hash(generatedPassword, 12);
 
-				// Create the user
-				const [{ password: hashedDbPassword, ...newUser }] = await tx
-					.insert(users)
-					.values({
-						email,
-						password: hashedPassword,
-						name,
-						metadata: {
-							phone: metadata?.phone || "",
-							address: metadata?.address || "",
-						},
-						status,
-						updatedAt: new Date(),
-					})
-					.returning()
+        // Create the user
+        const [{ password: hashedDbPassword, ...newUser }] = await tx
+          .insert(users)
+          .values({
+            email,
+            password: hashedPassword,
+            name,
+            metadata: {
+              phone: metadata?.phone || "",
+              address: metadata?.address || "",
+            },
+            status,
+            updatedAt: new Date(),
+          })
+          .returning();
 
-				// Generate secure random token
-				const resetToken = crypto.randomBytes(32).toString("hex")
-				const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
+        // Generate secure random token
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-				// Store reset token in database
-				await tx.insert(passwordResetTokens).values({
-					userId: newUser.id,
-					token: resetToken,
-					expiresAt,
-					used: "false",
-				})
+        // Store reset token in database
+        await tx.insert(passwordResetTokens).values({
+          userId: newUser.id,
+          token: resetToken,
+          expiresAt,
+          used: "false",
+        });
 
-				// Check if user has doctor role to determine redirect URL
-				let userRedirectUrl = "https://bdgad.bio/auth" // default redirect URL
+        // Check if user has doctor role to determine redirect URL
+        let userRedirectUrl = "https://bdgad.bio/auth"; // default redirect URL
 
-				// Assign roles if provided
-				if (roleIds.length > 0) {
-					await tx.insert(userRoles).values(
-						roleIds.map((roleId) => ({
-							userId: newUser.id,
-							roleId,
-							updatedAt: new Date(),
-						}))
-					)
+        // Assign roles if provided
+        if (roleIds.length > 0) {
+          await tx.insert(userRoles).values(
+            roleIds.map((roleId) => ({
+              userId: newUser.id,
+              roleId,
+              updatedAt: new Date(),
+            }))
+          );
 
-					// Check if any of the assigned roles is "Doctor"
-					const assignedRoles = await tx
-						.select({ name: roles.name })
-						.from(roles)
-						.where(inArray(roles.id, roleIds))
+          // Check if any of the assigned roles is "Doctor"
+          const assignedRoles = await tx
+            .select({ name: roles.name })
+            .from(roles)
+            .where(inArray(roles.id, roleIds));
 
-					const isDoctorRole = assignedRoles.some(
-						(role) => role.name === "Doctor"
-					)
-					if (isDoctorRole) {
-						userRedirectUrl = "https://emr.bdgad.bio/auth"
-					}
-				}
+          const isDoctorRole = assignedRoles.some(
+            (role) => role.name === "Doctor"
+          );
+          if (isDoctorRole) {
+            userRedirectUrl = "https://emr.bdgad.bio/auth";
+          }
+        }
 
-				results.push({
-					user: newUser,
-					token: resetToken,
-					redirectUrl: userRedirectUrl,
-				})
-			}
+        results.push({
+          user: newUser,
+          token: resetToken,
+          redirectUrl: userRedirectUrl,
+        });
+      }
 
-			return results
-		})
+      return results;
+    });
 
-		// Send emails to all created users with their respective redirect URLs
-		try {
-			// Group users by redirect URL to send emails efficiently
-			const usersByRedirectUrl = finalResults.reduce((acc, result) => {
-				const url = result.redirectUrl || "https://bdgad.bio/auth"
-				if (!acc[url]) {
-					acc[url] = []
-				}
-				acc[url].push(result)
-				return acc
-			}, {} as Record<string, typeof finalResults>)
+    // Send emails to all created users with their respective redirect URLs
+    try {
+      // Group users by redirect URL to send emails efficiently
+      const usersByRedirectUrl = finalResults.reduce((acc, result) => {
+        const url = result.redirectUrl || "https://bdgad.bio/auth";
+        if (!acc[url]) {
+          acc[url] = [];
+        }
+        acc[url].push(result);
+        return acc;
+      }, {} as Record<string, typeof finalResults>);
 
-			// Send emails for each redirect URL group
-			for (const [redirectUrl, userGroup] of Object.entries(
-				usersByRedirectUrl
-			)) {
-				await sendPasswordEmailsToUsers(userGroup, redirectUrl)
-			}
-		} catch (emailError) {
-			console.error(
-				"Failed to send redirect to set password emails:",
-				emailError
-			)
-			// Don't throw here - user creation was successful, just email failed
-		}
+      // Send emails for each redirect URL group
+      for (const [redirectUrl, userGroup] of Object.entries(
+        usersByRedirectUrl
+      )) {
+        await sendPasswordEmailsToUsers(userGroup, redirectUrl);
+      }
+    } catch (emailError) {
+      console.error(
+        "Failed to send redirect to set password emails:",
+        emailError
+      );
+      // Don't throw here - user creation was successful, just email failed
+    }
 
-		return finalResults
-	} catch (error) {
-		console.error("Error in createUsersCore:", error)
-		throw error // Re-throw the error to be handled by the caller
-	}
+    return finalResults;
+  } catch (error) {
+    console.error("Error in createUsersCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
 
-export const createUsers = withAuth(createUsersCore)
-export type CreateUsersResult = Awaited<ReturnType<typeof createUsers>>
+export const createUsers = withAuth(createUsersCore);
+export type CreateUsersResult = Awaited<ReturnType<typeof createUsers>>;
 
 async function updateUserCore({
-	id,
-	email,
-	password,
-	name,
-	metadata,
-	roleIds,
-	status,
+  id,
+  email,
+  password,
+  name,
+  metadata,
+  roleIds,
+  status,
 }: {
-	id: number
-	email?: string
-	password?: string
-	name?: string
-	metadata?: Record<string, any>
-	roleIds?: number[]
-	status?: "active" | "inactive"
+  id: number;
+  email?: string;
+  password?: string;
+  name?: string;
+  metadata?: Record<string, any>;
+  roleIds?: number[];
+  status?: "active" | "inactive";
 }) {
-	try {
-		// Validate phone if present
-		if (metadata?.phone) {
-			validatePhone(metadata.phone)
-			await validatePhoneUniqueness(metadata.phone, id)
-		}
+  try {
+    // Validate phone if present
+    if (metadata?.phone) {
+      validatePhone(metadata.phone);
+      await validatePhoneUniqueness(metadata.phone, id);
+    }
 
-		// Validate address if present
-		if (metadata?.address) {
-			validateAddress(metadata.address)
-		}
+    // Validate address if present
+    if (metadata?.address) {
+      validateAddress(metadata.address);
+    }
 
-		// Validate role IDs if present
-		if (roleIds) {
-			await validateRoleIds(roleIds)
-		}
+    // Validate role IDs if present
+    if (roleIds) {
+      await validateRoleIds(roleIds);
+    }
 
-		// Validate status if present
-		if (status) {
-			validateStatus(status)
-		}
+    // Validate status if present
+    if (status) {
+      validateStatus(status);
+    }
 
-		const result = await db.transaction(async (tx) => {
-			// Prepare update data
-			const updateData: any = {}
+    const result = await db.transaction(async (tx) => {
+      // Prepare update data
+      const updateData: any = {};
 
-			if (email !== undefined) updateData.email = email
-			if (name !== undefined) updateData.name = name
-			if (metadata !== undefined) updateData.metadata = metadata
-			if (status !== undefined) updateData.status = status
-			if (password !== undefined) {
-				updateData.password = await bcrypt.hash(password, 12)
-			}
+      if (email !== undefined) updateData.email = email;
+      if (name !== undefined) updateData.name = name;
+      if (metadata !== undefined) updateData.metadata = metadata;
+      if (status !== undefined) updateData.status = status;
+      if (password !== undefined) {
+        updateData.password = await bcrypt.hash(password, 12);
+      }
 
-			// Get current user data for role comparison
-			const currentUser = await tx
-				.select({
-					email: users.email,
-					name: users.name,
-					roles: roles.name,
-				})
-				.from(users)
-				.leftJoin(userRoles, eq(users.id, userRoles.userId))
-				.leftJoin(roles, eq(userRoles.roleId, roles.id))
-				.where(eq(users.id, id))
-				.limit(1)
+      // Get current user data for role comparison
+      const currentUser = await tx
+        .select({
+          email: users.email,
+          name: users.name,
+          roles: roles.name,
+        })
+        .from(users)
+        .leftJoin(userRoles, eq(users.id, userRoles.userId))
+        .leftJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(eq(users.id, id))
+        .limit(1);
 
-			// Update user if there's data to update
-			let updatedUser
-			if (Object.keys(updateData).length > 0) {
-				const [{ password: hashedDbPassword, ...user }] = await tx
-					.update(users)
-					.set({
-						...updateData,
-						updatedAt: new Date(),
-					})
-					.where(eq(users.id, id))
-					.returning()
-				updatedUser = user
-			} else {
-				// If no user data to update, just get the current user
-				const { password: hashedDbPassword, ...user } = await tx
-					.select()
-					.from(users)
-					.where(eq(users.id, id))
-					.then((rows) => rows[0])
-				updatedUser = user
-			}
+      // Update user if there's data to update
+      let updatedUser;
+      if (Object.keys(updateData).length > 0) {
+        const [{ password: hashedDbPassword, ...user }] = await tx
+          .update(users)
+          .set({
+            ...updateData,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, id))
+          .returning();
+        updatedUser = user;
+      } else {
+        // If no user data to update, just get the current user
+        const { password: hashedDbPassword, ...user } = await tx
+          .select()
+          .from(users)
+          .where(eq(users.id, id))
+          .then((rows) => rows[0]);
+        updatedUser = user;
+      }
 
-			// Update roles if provided
-			if (roleIds !== undefined) {
-				// Get new role name for email notification
-				const newRole = await tx
-					.select({ name: roles.name })
-					.from(roles)
-					.where(eq(roles.id, roleIds[0]))
-					.limit(1)
+      // Update roles if provided
+      if (roleIds !== undefined) {
+        // Get new role name for email notification
+        const newRole = await tx
+          .select({ name: roles.name })
+          .from(roles)
+          .where(eq(roles.id, roleIds[0]))
+          .limit(1);
 
-				// Delete existing roles
-				await tx.delete(userRoles).where(eq(userRoles.userId, id))
+        // Delete existing roles
+        await tx.delete(userRoles).where(eq(userRoles.userId, id));
 
-				// Insert new roles if any
-				if (roleIds.length > 0) {
-					await tx.insert(userRoles).values(
-						roleIds.map((roleId) => ({
-							userId: id,
-							roleId,
-						}))
-					)
+        // Insert new roles if any
+        if (roleIds.length > 0) {
+          await tx.insert(userRoles).values(
+            roleIds.map((roleId) => ({
+              userId: id,
+              roleId,
+            }))
+          );
 
-					// Send email notification if role changed
-					if (currentUser[0]?.roles !== newRole[0]?.name) {
-						try {
-							await sendRoleChangeEmail(
-								currentUser[0].email,
-								currentUser[0].name,
-								newRole[0].name
-							)
-						} catch (emailError) {
-							console.error(
-								"Failed to send role change notification:",
-								emailError
-							)
-							// Don't throw here - role update was successful, just email failed
-						}
-					}
-				}
-			}
+          // Send email notification if role changed
+          if (currentUser[0]?.roles !== newRole[0]?.name) {
+            try {
+              await sendRoleChangeEmail(
+                currentUser[0].email,
+                currentUser[0].name,
+                newRole[0].name
+              );
+            } catch (emailError) {
+              console.error(
+                "Failed to send role change notification:",
+                emailError
+              );
+              // Don't throw here - role update was successful, just email failed
+            }
+          }
+        }
+      }
 
-			return updatedUser
-		})
+      return updatedUser;
+    });
 
-		return result
-	} catch (error) {
-		console.error("Error in updateUserCore:", error)
-		throw error // Re-throw the error to be handled by the caller
-	}
+    return result;
+  } catch (error) {
+    console.error("Error in updateUserCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
 
-export const updateUser = withAuth(updateUserCore)
-export type UpdateUserResult = Awaited<ReturnType<typeof updateUser>>
+export const updateUser = withAuth(updateUserCore);
+export type UpdateUserResult = Awaited<ReturnType<typeof updateUser>>;
 
 async function deleteUserCore({ id, reason }: { id: number; reason?: string }) {
-	try {
-		console.log("Validating user ID for deletion:", id)
+  try {
+    console.log("Validating user ID for deletion:", id);
 
-		// Validate that id is a number and not empty
-		if (!id || typeof id !== "number") {
-			throw new Error("Invalid user ID: must be a number")
-		}
+    // Validate that id is a number and not empty
+    if (!id || typeof id !== "number") {
+      throw new Error("Invalid user ID: must be a number");
+    }
 
-		// Get user details before deletion for email notification
-		const userToDelete = await db
-			.select()
-			.from(users)
-			.where(eq(users.id, id))
-			.limit(1)
+    // Get user details before deletion for email notification
+    const userToDelete = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
 
-		if (userToDelete.length === 0) {
-			throw new Error(`User with ID ${id} does not exist`)
-		}
+    if (userToDelete.length === 0) {
+      throw new Error(`User with ID ${id} does not exist`);
+    }
 
-		await db.transaction(async (tx) => {
-			// Soft delete user by setting deletedAt = now
-			await tx
-				.update(users)
-				.set({ deletedAt: new Date() })
-				.where(eq(users.id, id))
-		})
+    await db.transaction(async (tx) => {
+      // Soft delete user by setting deletedAt = now
+      await tx
+        .update(users)
+        .set({ deletedAt: new Date() })
+        .where(eq(users.id, id));
+    });
 
-		// Send email notification
-		try {
-			await sendDeletionEmail(
-				userToDelete[0].email,
-				userToDelete[0].name,
-				reason
-			)
-		} catch (emailError) {
-			console.error(
-				"Failed to send deletion notification email:",
-				emailError
-			)
-			// Don't throw here - user deletion was successful, just email failed
-		}
-	} catch (error) {
-		console.error("Error in deleteUserCore:", error)
-		throw error // Re-throw the error to be handled by the caller
-	}
+    // Send email notification
+    try {
+      await sendDeletionEmail(
+        userToDelete[0].email,
+        userToDelete[0].name,
+        reason
+      );
+    } catch (emailError) {
+      console.error("Failed to send deletion notification email:", emailError);
+      // Don't throw here - user deletion was successful, just email failed
+    }
+  } catch (error) {
+    console.error("Error in deleteUserCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
-export const deleteUser = withAuth(deleteUserCore)
-export type DeleteUserResult = Awaited<ReturnType<typeof deleteUser>>
+export const deleteUser = withAuth(deleteUserCore);
+export type DeleteUserResult = Awaited<ReturnType<typeof deleteUser>>;
+
+// Add function to get deleted users for recovery
+async function getDeletedUsersCore({
+  limit = FetchLimit.USERS,
+  page = 1,
+  search,
+}: {
+  limit?: number;
+  page?: number;
+  search?: string;
+} = {}) {
+  try {
+    console.log("Validating pagination parameters:", { limit, page });
+
+    // Validate limit if provided
+    if (limit !== undefined) {
+      if (typeof limit !== "number") {
+        throw new Error("Limit must be a number");
+      }
+      if (limit <= 0) {
+        throw new Error("Limit must be greater than 0");
+      }
+    }
+
+    // Validate page if provided
+    if (page !== undefined) {
+      if (typeof page !== "number") {
+        throw new Error("Page must be a number");
+      }
+      if (page <= 0) {
+        throw new Error("Page must be greater than 0");
+      }
+    }
+
+    const offset = (page - 1) * limit;
+
+    const { password, ...userColumns } = getTableColumns(users);
+
+    const result = await db.transaction(async (tx) => {
+      // Get deleted users with their roles
+      const deletedUsersWithRoles = search
+        ? await tx
+            .select({
+              ...userColumns,
+              roleId: userRoles.roleId,
+              roleName: roles.name,
+              roleDescription: roles.description,
+            })
+            .from(users)
+            .leftJoin(userRoles, eq(users.id, userRoles.userId))
+            .leftJoin(roles, eq(userRoles.roleId, roles.id))
+            .where(
+              and(
+                ilike(users.email, `%${search}%`),
+                not(isNull(users.deletedAt))
+              )
+            )
+            .orderBy(desc(users.deletedAt))
+            .limit(limit)
+            .offset(offset)
+        : await tx
+            .select({
+              ...userColumns,
+              roleId: userRoles.roleId,
+              roleName: roles.name,
+              roleDescription: roles.description,
+            })
+            .from(users)
+            .leftJoin(userRoles, eq(users.id, userRoles.userId))
+            .leftJoin(roles, eq(userRoles.roleId, roles.id))
+            .where(not(isNull(users.deletedAt)))
+            .orderBy(desc(users.deletedAt))
+            .limit(limit)
+            .offset(offset);
+
+      // Group roles by user
+      const userMap = new Map<number, UserWithRoles>();
+
+      deletedUsersWithRoles.forEach((row: any) => {
+        const userId = row.id;
+        if (!userMap.has(userId)) {
+          const { roleId, roleName, roleDescription, ...userData } = row;
+          userMap.set(userId, {
+            ...userData,
+            roles: [],
+          });
+        }
+
+        // Add role if it exists (leftJoin might return null roles for users without roles)
+        if (row.roleId && row.roleName && row.roleDescription) {
+          userMap.get(userId)!.roles.push({
+            id: row.roleId,
+            name: row.roleName,
+            description: row.roleDescription,
+          });
+        }
+      });
+
+      const userList: UserWithRoles[] = Array.from(userMap.values());
+
+      // Get total count with search condition
+      const totalResult = search
+        ? await tx
+            .select({ count: count() })
+            .from(users)
+            .where(
+              and(
+                ilike(users.email, `%${search}%`),
+                not(isNull(users.deletedAt))
+              )
+            )
+        : await tx
+            .select({ count: count() })
+            .from(users)
+            .where(not(isNull(users.deletedAt)));
+
+      return {
+        users: userList,
+        total: totalResult[0].count,
+        totalPages: Math.ceil(totalResult[0].count / limit),
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error in getDeletedUsersCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+}
+
+export const getDeletedUsers = withAuth(getDeletedUsersCore);
+export type GetDeletedUsersResult = Awaited<ReturnType<typeof getDeletedUsers>>;
+
+// Recovery function
+async function recoverUserCore({ id }: { id: number }) {
+  try {
+    console.log("Validating user ID for recovery:", id);
+
+    // Validate that id is a number and not empty
+    if (!id || typeof id !== "number") {
+      throw new Error("Invalid user ID: must be a number");
+    }
+
+    // Get user details before recovery for email notification
+    const userToRecover = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, id), not(isNull(users.deletedAt))))
+      .limit(1);
+
+    if (userToRecover.length === 0) {
+      throw new Error(`User with ID ${id} does not exist or is not deleted`);
+    }
+
+    await db.transaction(async (tx) => {
+      // Recover user by setting deletedAt = null and status = active
+      await tx
+        .update(users)
+        .set({
+          deletedAt: null,
+          status: "active",
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, id));
+    });
+
+    // Send email notification
+    try {
+      await sendRecoveryEmail(userToRecover[0].email, userToRecover[0].name);
+    } catch (emailError) {
+      console.error("Failed to send recovery notification email:", emailError);
+      // Don't throw here - user recovery was successful, just email failed
+    }
+  } catch (error) {
+    console.error("Error in recoverUserCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+}
+
+export const recoverUser = withAuth(recoverUserCore);
+export type RecoverUserResult = Awaited<ReturnType<typeof recoverUser>>;

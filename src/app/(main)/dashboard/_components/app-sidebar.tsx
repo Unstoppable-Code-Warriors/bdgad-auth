@@ -1,6 +1,6 @@
 "use client";
 
-import { Dna, Settings2, UserRoundCheck, Users } from "lucide-react";
+import { Dna, Settings2, UserRoundCheck, Users, UserX } from "lucide-react";
 
 import { NavItems } from "./nav-items";
 import {
@@ -19,6 +19,11 @@ const navItems = [
     name: "Quản lý tài khoản",
     url: "/users",
     icon: Users,
+  },
+  {
+    name: "Quản lý khôi phục",
+    url: "/recovery",
+    icon: UserX,
   },
   {
     name: "Quản lý vai trò",

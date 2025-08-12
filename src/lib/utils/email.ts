@@ -216,30 +216,30 @@ export async function sendDeletionEmail(
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Thông báo xóa tài khoản - BDGAD",
+      subject: "Thông báo tạm khóa tài khoản - BDGAD",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Thông báo xóa tài khoản</h2>
-          <p>Kính gửi ${name},</p>
-          <p>Email này thông báo rằng tài khoản của bạn đã bị xóa vĩnh viễn khỏi hệ thống BDGAD.</p>
-          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            ${reason ? `<p><strong>Lý do xóa:</strong> ${reason}</p>` : ""}
-            <p><strong>Thông báo quan trọng:</strong> Tất cả dữ liệu liên quan đến tài khoản này đã bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.</p>
-          </div>
-          <p>Nếu bạn cho rằng hành động này là nhầm lẫn, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi ngay lập tức.</p>
-          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
-        </div>
-      `,
-      text: `Thông báo xóa tài khoản
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Thông báo tạm khóa tài khoản</h2>
+      <p>Kính gửi ${name},</p>
+      <p>Email này thông báo rằng tài khoản của bạn đã bị <strong>tạm khóa</strong> và sẽ bị xóa vĩnh viễn sau 30 ngày nếu không được khôi phục.</p>
+      <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        ${reason ? `<p><strong>Lý do tạm khóa:</strong> ${reason}</p>` : ""}
+        <p><strong>Thông báo quan trọng:</strong> Trong vòng 30 ngày tới, bạn có thể yêu cầu khôi phục tài khoản. Sau thời hạn này, toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn và không thể phục hồi.</p>
+      </div>
+      <p>Nếu bạn cho rằng hành động này là nhầm lẫn hoặc muốn khôi phục tài khoản, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi.</p>
+      <p>Trân trọng,<br>Đội ngũ BDGAD</p>
+    </div>
+  `,
+      text: `Thông báo tạm khóa tài khoản
 
 Kính gửi ${name},
 
-Email này thông báo rằng tài khoản của bạn đã bị xóa vĩnh viễn khỏi hệ thống BDGAD.
+Email này thông báo rằng tài khoản của bạn đã bị tạm khóa và sẽ bị xóa vĩnh viễn sau 30 ngày nếu không được khôi phục.
 
-${reason ? `Lý do xóa: ${reason}\n` : ""}
-Thông báo quan trọng: Tất cả dữ liệu liên quan đến tài khoản này đã bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.
+${reason ? `Lý do tạm khóa: ${reason}\n` : ""}
+Thông báo quan trọng: Trong vòng 30 ngày tới, bạn có thể yêu cầu khôi phục tài khoản. Sau thời hạn này, toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn và không thể phục hồi.
 
-Nếu bạn cho rằng hành động này là nhầm lẫn, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi ngay lập tức.
+Nếu bạn cho rằng hành động này là nhầm lẫn hoặc muốn khôi phục tài khoản, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi.
 
 Trân trọng,
 Đội ngũ BDGAD`,
@@ -251,5 +251,49 @@ Trân trọng,
   } catch (error) {
     console.error("Error sending deletion notification:", error);
     throw new Error("Failed to send deletion notification");
+  }
+}
+
+export async function sendRecoveryEmail(email: string, name: string) {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Tài khoản của bạn đã được khôi phục - BDGAD",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #28a745;">Tài khoản đã được khôi phục thành công</h2>
+          <p>Kính gửi ${name},</p>
+          <p>Chúng tôi xin thông báo rằng tài khoản BDGAD của bạn đã được khôi phục thành công.</p>
+          <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #c3e6cb;">
+            <p><strong>✅ Tài khoản đã được kích hoạt lại</strong></p>
+            <p>Bạn có thể đăng nhập và sử dụng tất cả các tính năng của hệ thống như bình thường.</p>
+          </div>
+          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
+        </div>
+      `,
+      text: `Tài khoản đã được khôi phục thành công
+
+Kính gửi ${name},
+
+Chúng tôi xin thông báo rằng tài khoản BDGAD của bạn đã được khôi phục thành công.
+
+✅ Tài khoản đã được kích hoạt lại
+Bạn có thể đăng nhập và sử dụng tất cả các tính năng của hệ thống như bình thường.
+
+Nếu bạn không mong đợi email này hoặc có bất kỳ câu hỏi nào, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi.
+
+Trân trọng,
+Đội ngũ BDGAD`,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Recovery notification sent successfully to ${email}`);
+    return true;
+  } catch (error) {
+    console.error("Error sending recovery notification:", error);
+    throw new Error("Failed to send recovery notification");
   }
 }

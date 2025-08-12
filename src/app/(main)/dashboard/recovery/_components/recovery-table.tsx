@@ -228,7 +228,6 @@ export function RecoveryTable() {
         searchValue={search}
         rowActions={(row) => <ActionsMenu row={row} />}
         requiredColumns={["name", "email", "deletedAt"]}
-        actionsColumnWidth={40}
       />
       {isLoadingUsers && (
         <div className="flex items-center justify-center p-4">

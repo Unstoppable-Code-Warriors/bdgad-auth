@@ -37,7 +37,7 @@ export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & { session: Session }) {
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant="inset" {...props} className="w-56">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

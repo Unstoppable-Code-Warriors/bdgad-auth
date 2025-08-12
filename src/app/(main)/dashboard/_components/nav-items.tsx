@@ -34,6 +34,7 @@ export function NavItems({
 									? "filled"
 									: "default"
 							}
+							className="[&>span:last-child]:whitespace-normal [&>span:last-child]:break-words [&>span:last-child]:!truncate-none min-h-fit py-2"
 						>
 							<Link href={`/dashboard${item.url}`}>
 								<item.icon />

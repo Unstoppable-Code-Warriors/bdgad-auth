@@ -223,6 +223,7 @@ export function RecoveryTable() {
         searchKey="email"
         searchPlaceholder="Tìm kiếm theo email..."
         enableFiltering={true}
+        enableColumnVisibility={false}
         onSearch={handleSearch}
         searchValue={search}
         rowActions={(row) => <ActionsMenu row={row} />}

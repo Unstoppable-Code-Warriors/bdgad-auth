@@ -57,10 +57,12 @@ async function getUsersCore({
   limit = FetchLimit.USERS,
   page = 1,
   search,
+  roleCode,
 }: {
   limit?: number;
   page?: number;
   search?: string;
+  roleCode?: string;
 } = {}) {
   try {
     console.log("Validating pagination parameters:", { limit, page });
@@ -103,18 +105,22 @@ async function getUsersCore({
         .leftJoin(roles, eq(userRoles.roleId, roles.id))
         .orderBy(desc(users.createdAt));
 
+      // Build where conditions
+      let whereConditions = [isNull(users.deletedAt)];
+
+      if (search) {
+        whereConditions.push(ilike(users.email, `%${search}%`));
+      }
+
+      if (roleCode) {
+        whereConditions.push(eq(roles.name, roleCode));
+      }
+
       // Get users with their roles
-      const usersWithRoles = search
-        ? await baseQuery
-            .where(
-              and(ilike(users.email, `%${search}%`), isNull(users.deletedAt))
-            )
-            .limit(limit)
-            .offset(offset)
-        : await baseQuery
-            .where(isNull(users.deletedAt))
-            .limit(limit)
-            .offset(offset);
+      const usersWithRoles = await baseQuery
+        .where(and(...whereConditions))
+        .limit(limit)
+        .offset(offset);
 
       // Group roles by user
       const userMap = new Map<number, UserWithRoles>();
@@ -141,24 +147,40 @@ async function getUsersCore({
 
       const userList: UserWithRoles[] = Array.from(userMap.values());
 
-      // Get total count with search condition
-      const totalResult = search
-        ? await tx
-            .select({ count: count() })
-            .from(users)
-            .where(
-              and(ilike(users.email, `%${search}%`), isNull(users.deletedAt))
-            )
-        : await tx
-            .select({ count: count() })
-            .from(users)
-            .where(isNull(users.deletedAt));
+      // Build where conditions for count query
+      let countWhereConditions = [isNull(users.deletedAt)];
 
-      return {
-        users: userList,
-        total: totalResult[0].count,
-        totalPages: Math.ceil(totalResult[0].count / limit),
-      };
+      if (search) {
+        countWhereConditions.push(ilike(users.email, `%${search}%`));
+      }
+
+      if (roleCode) {
+        // For count query with role filter, we need to join with roles table
+        const totalResult = await tx
+          .select({ count: count() })
+          .from(users)
+          .leftJoin(userRoles, eq(users.id, userRoles.userId))
+          .leftJoin(roles, eq(userRoles.roleId, roles.id))
+          .where(and(...countWhereConditions, eq(roles.name, roleCode)));
+
+        return {
+          users: userList,
+          total: totalResult[0].count,
+          totalPages: Math.ceil(totalResult[0].count / limit),
+        };
+      } else {
+        // For count query without role filter
+        const totalResult = await tx
+          .select({ count: count() })
+          .from(users)
+          .where(and(...countWhereConditions));
+
+        return {
+          users: userList,
+          total: totalResult[0].count,
+          totalPages: Math.ceil(totalResult[0].count / limit),
+        };
+      }
     });
 
     return result;

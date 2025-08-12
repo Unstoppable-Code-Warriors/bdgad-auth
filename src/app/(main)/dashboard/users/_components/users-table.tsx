@@ -14,6 +14,7 @@ import {
   Lock,
   FileUp,
   LockOpen,
+  Search,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
@@ -31,13 +32,25 @@ import { getUsers } from "@/lib/actions/users";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
+  {
+    accessorKey: "index",
+    header: "STT",
+    cell: ({ row, table }) => {
+      const pagination = table.getState().pagination;
+      const pageIndex = pagination?.pageIndex ?? 0;
+      const pageSize = pagination?.pageSize ?? 10;
+      return pageIndex * pageSize + row.index + 1;
+    },
+    size: 60,
+  },
   {
     accessorKey: "name",
     header: "Tên",
     cell: ({ row }) => (
-      <div className="max-w-[100px] truncate" title={row.original.name}>
+      <div className="max-w-[120px] truncate" title={row.original.name}>
         {row.original.name}
       </div>
     ),
@@ -46,20 +59,8 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <div className="max-w-[150px] truncate" title={row.original.email}>
+      <div className="max-w-[180px] truncate" title={row.original.email}>
         {row.original.email}
-      </div>
-    ),
-  },
-
-  {
-    accessorKey: "roles",
-    header: "Vai trò",
-    cell: ({ row }) => (
-      <div className="flex gap-1 max-w-[90px]">
-        {row.original.roles.map((role) => (
-          <Badge key={role.id}>{userRole[role.name]}</Badge>
-        ))}
       </div>
     ),
   },
@@ -68,7 +69,7 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     header: "Số điện thoại",
     cell: ({ row }) => (
       <div
-        className="max-w-[100px] truncate"
+        className="max-w-[120px] truncate"
         title={
           (row.original?.metadata as Record<string, string>)?.["phone"] || "-"
         }
@@ -78,31 +79,15 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     ),
   },
   {
-    accessorKey: "address",
-    header: "Địa chỉ",
+    accessorKey: "roles",
+    header: "Vai trò",
     cell: ({ row }) => (
-      <div
-        className="max-w-[100px] truncate"
-        title={
-          (row.original?.metadata as Record<string, string>)?.["address"] || "-"
-        }
-      >
-        {(row.original?.metadata as Record<string, string>)?.["address"] || "-"}
+      <div className="flex gap-1 max-w-[120px]">
+        {row.original.roles.map((role) => (
+          <Badge key={role.id}>{userRole[role.name]}</Badge>
+        ))}
       </div>
     ),
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Ngày tạo",
-    cell: ({ row }) => {
-      return (
-        <div>
-          <div className="max-w-[10px]">
-            {formatDate(new Date(row.original.createdAt))}
-          </div>
-        </div>
-      );
-    },
   },
   {
     accessorKey: "status",
@@ -258,6 +243,28 @@ const ActionsMenu = ({
   );
 };
 
+// Define role tabs
+const roleTabs = [
+  { key: "all", label: "Tất cả", roleCode: null },
+  { key: "doctor", label: "Bác sĩ", roleCode: "Doctor" },
+  { key: "staff", label: "Nhân viên", roleCode: "Staff" },
+  {
+    key: "lab-tech",
+    label: "KTV Xét nghiệm",
+    roleCode: "Lab Testing Technician",
+  },
+  {
+    key: "analysis-tech",
+    label: "KTV Phân tích",
+    roleCode: "Analysis Technician",
+  },
+  {
+    key: "validation-tech",
+    label: "KTV Thẩm định",
+    roleCode: "Validation Technician",
+  },
+];
+
 // Add debounce hook
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -276,29 +283,10 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function UsersTable() {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [pageSize, setPageSize] = useState(10);
-
-  // Add debounced search
-  const debouncedSearch = useDebounce(search, 500); // 500ms delay
-
-  // Query for paginated users (for table display)
-  const {
-    data: usersData,
-    isLoading: isLoadingUsers,
-    error: usersError,
-  } = useQuery({
-    queryKey: ["users", page, debouncedSearch, pageSize],
-    queryFn: () =>
-      getUsers({
-        page,
-        search: debouncedSearch,
-        limit: pageSize,
-      }),
-    staleTime: 0,
-    refetchOnWindowFocus: false,
-  });
+  const [activeTab, setActiveTab] = useState("all");
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [globalPage, setGlobalPage] = useState(1);
+  const [globalPageSize, setGlobalPageSize] = useState(10);
 
   // Query for all users (for actions)
   const { data: allUsersData } = useQuery({
@@ -322,74 +310,155 @@ export function UsersTable() {
     queryFn: () => getRoles(),
   });
 
-  const handleSearch = (value: string) => {
-    setSearch(value);
-    setPage(1); // Reset to first page when searching
+  // Get current tab's role code
+  const currentRoleCode =
+    roleTabs.find((tab) => tab.key === activeTab)?.roleCode || null;
+
+  // Query for users with current filter
+  const debouncedGlobalSearch = useDebounce(globalSearch, 500);
+  const {
+    data: currentUsersData,
+    isLoading: isLoadingCurrentUsers,
+    error: currentUsersError,
+  } = useQuery({
+    queryKey: [
+      "users",
+      currentRoleCode,
+      globalPage,
+      debouncedGlobalSearch,
+      globalPageSize,
+    ],
+    queryFn: async () => {
+      const result = await getUsers({
+        page: globalPage,
+        search: debouncedGlobalSearch,
+        limit: globalPageSize,
+        roleCode: currentRoleCode || undefined,
+      });
+      return result;
+    },
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
+
+  const handleGlobalSearch = (value: string) => {
+    setGlobalSearch(value);
+    setGlobalPage(1);
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
+  const handleGlobalPageChange = (newPage: number) => {
+    setGlobalPage(newPage);
   };
 
-  const handlePageSizeChange = (newSize: number) => {
-    setPageSize(newSize);
-    setPage(1); // Reset to first page when changing page size
+  const handleGlobalPageSizeChange = (newSize: number) => {
+    setGlobalPageSize(newSize);
+    setGlobalPage(1);
   };
 
-  const error = usersError || rolesError;
-  const isLoading = isLoadingUsers || isLoadingRoles;
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setGlobalPage(1); // Reset to first page when changing tabs
+  };
 
-  if (error) {
+  if (rolesError || currentUsersError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          {error instanceof Error
-            ? error.message
+          {rolesError instanceof Error
+            ? rolesError.message
+            : currentUsersError instanceof Error
+            ? currentUsersError.message
             : "Đã xảy ra lỗi khi tải dữ liệu"}
         </AlertDescription>
       </Alert>
     );
   }
 
-  const users = usersData?.users || [];
   const allUsers = allUsersData?.users || [];
-  const total = usersData?.total || 0;
+  const currentUsers = currentUsersData?.users || [];
+  const totalUsers = currentUsersData?.total || 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Action buttons and total count */}
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-500">
-          Tổng: {total} {total === 1 ? "tài khoản" : "tài khoản"}
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            {currentRoleCode
+              ? `${
+                  roleTabs.find((tab) => tab.roleCode === currentRoleCode)
+                    ?.label
+                }: `
+              : "Tổng: "}
+            {totalUsers} {totalUsers === 1 ? "tài khoản" : "tài khoản"}
+          </div>
         </div>
       </div>
-      <DataTable
-        columns={columns}
-        data={users}
-        total={total}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        searchKey="email"
-        searchPlaceholder="Tìm kiếm theo email..."
-        enableFiltering={true}
-        onSearch={handleSearch}
-        searchValue={search}
-        actions={
-          <UsersActions roles={rolesData?.roles || []} users={allUsers} />
-        }
-        rowActions={(row) => (
-          <ActionsMenu
-            row={row}
-            roles={rolesData?.roles || []}
-            users={allUsers}
+
+      {/* Search bar above tabs */}
+      <div className="flex justify-between gap-4">
+        <div className="flex-1 max-w-md relative">
+          <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo email..."
+            value={globalSearch}
+            onChange={(e) => handleGlobalSearch(e.target.value)}
+            className="w-full px-3 pl-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent "
           />
-        )}
-        requiredColumns={["name", "email", "roles"]}
-        actionsColumnWidth={40}
-      />
-      {isLoading && (
+        </div>
+        <UsersActions roles={rolesData?.roles || []} users={allUsers} />
+      </div>
+
+      {/* Role-based tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-6">
+          {roleTabs.map((tab) => (
+            <TabsTrigger key={tab.key} value={tab.key}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {roleTabs.map((tab) => (
+          <TabsContent key={tab.key} value={tab.key}>
+            <div className="space-y-4">
+              <DataTable
+                columns={columns}
+                data={currentUsers}
+                total={totalUsers}
+                page={globalPage}
+                pageSize={globalPageSize}
+                onPageChange={handleGlobalPageChange}
+                onPageSizeChange={handleGlobalPageSizeChange}
+                enableFiltering={false}
+                enableColumnVisibility={false} // Disable DataTable's internal search since we're using global search
+                rowActions={(row) => (
+                  <ActionsMenu
+                    row={row}
+                    roles={rolesData?.roles || []}
+                    users={allUsers}
+                  />
+                )}
+                requiredColumns={["name", "email", "roles"]}
+                actionsColumnWidth={40}
+              />
+              {isLoadingCurrentUsers && (
+                <div className="flex items-center justify-center p-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      {isLoadingRoles && (
         <div className="flex items-center justify-center p-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
         </div>

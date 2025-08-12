@@ -67,16 +67,17 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
   {
     accessorKey: "phone",
     header: "Số điện thoại",
-    cell: ({ row }) => (
-      <div
-        className="max-w-[120px] truncate"
-        title={
-          (row.original?.metadata as Record<string, string>)?.["phone"] || "-"
-        }
-      >
-        {(row.original?.metadata as Record<string, string>)?.["phone"] || "-"}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const metadata = row.original?.metadata as Record<string, any>;
+      const phones = metadata?.phones as string[];
+      const phone1 = phones?.[0] || "-";
+
+      return (
+        <div className="max-w-[120px] truncate" title={phone1}>
+          {phone1}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "roles",

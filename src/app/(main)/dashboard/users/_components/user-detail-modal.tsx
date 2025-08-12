@@ -13,7 +13,8 @@ interface UserDetailModalProps {
 
 const UserDetailModal = ({ row }: UserDetailModalProps) => {
   const user = row.original;
-  const metadata = user.metadata as Record<string, string> || {};
+  const metadata = (user.metadata as Record<string, any>) || {};
+  const phones = (metadata.phones as string[]) || [];
 
   return (
     <div className="space-y-6">
@@ -27,13 +28,22 @@ const UserDetailModal = ({ row }: UserDetailModalProps) => {
           <p className="mt-1">{user.email}</p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Trạng thái</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Trạng thái
+          </h3>
           <p className="mt-1">
-            <Badge variant={row.original.status === "active" ? "default" : "destructive"}
-        className={row.original.status === "active" ? "bg-green-600 text-white" : ""}>
+            <Badge
+              variant={
+                row.original.status === "active" ? "default" : "destructive"
+              }
+              className={
+                row.original.status === "active"
+                  ? "bg-green-600 text-white"
+                  : ""
+              }
+            >
               {userStatus[user.status]}
             </Badge>
-
           </p>
         </div>
         <div>
@@ -47,28 +57,36 @@ const UserDetailModal = ({ row }: UserDetailModalProps) => {
           </p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Số điện thoại</h3>
-          <p className="mt-1">{metadata.phone || "-"}</p>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Số điện thoại 1
+          </h3>
+          <p className="mt-1">{phones[0] || "-"}</p>
         </div>
         <div>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Số điện thoại 2
+          </h3>
+          <p className="mt-1">{phones[1] || "-"}</p>
+        </div>
+        <div className="col-span-2">
           <h3 className="text-sm font-medium text-muted-foreground">Địa chỉ</h3>
           <p className="mt-1">{metadata.address || "-"}</p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Ngày tạo</h3>
-          <p className="mt-1">
-            {formatDate(new Date(user.createdAt), true)}
-          </p>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Ngày tạo
+          </h3>
+          <p className="mt-1">{formatDate(new Date(user.createdAt), true)}</p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">Ngày cập nhật</h3>
-          <p className="mt-1">
-            {formatDate(new Date(user.updatedAt), true)}
-          </p>
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Ngày cập nhật
+          </h3>
+          <p className="mt-1">{formatDate(new Date(user.updatedAt), true)}</p>
         </div>
       </div>
     </div>
   );
 };
 
-export default UserDetailModal; 
+export default UserDetailModal;

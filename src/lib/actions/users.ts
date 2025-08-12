@@ -953,3 +953,49 @@ async function recoverUserCore({ id }: { id: number }) {
 
 export const recoverUser = withAuth(recoverUserCore);
 export type RecoverUserResult = Awaited<ReturnType<typeof recoverUser>>;
+
+// Permanent delete function - completely removes user from database
+async function permanentDeleteUserCore({ id }: { id: number }) {
+  try {
+    console.log("Validating user ID for permanent deletion:", id);
+
+    // Validate that id is a number and not empty
+    if (!id || typeof id !== "number") {
+      throw new Error("Invalid user ID: must be a number");
+    }
+
+    // Get user details before deletion to verify they are already soft deleted
+    const userToDelete = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, id), not(isNull(users.deletedAt))))
+      .limit(1);
+
+    if (userToDelete.length === 0) {
+      throw new Error(`User with ID ${id} does not exist or is not deleted`);
+    }
+
+    await db.transaction(async (tx) => {
+      // Delete user roles first (foreign key constraint)
+      await tx.delete(userRoles).where(eq(userRoles.userId, id));
+
+      // Delete any password reset tokens
+      await tx
+        .delete(passwordResetTokens)
+        .where(eq(passwordResetTokens.userId, id));
+
+      // Permanently delete user from database
+      await tx.delete(users).where(eq(users.id, id));
+    });
+
+    console.log(`User with ID ${id} permanently deleted from database`);
+  } catch (error) {
+    console.error("Error in permanentDeleteUserCore:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+}
+
+export const permanentDeleteUser = withAuth(permanentDeleteUserCore);
+export type PermanentDeleteUserResult = Awaited<
+  ReturnType<typeof permanentDeleteUser>
+>;

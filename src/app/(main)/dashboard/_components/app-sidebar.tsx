@@ -21,7 +21,7 @@ const navItems = [
     icon: Users,
   },
   {
-    name: "Quản lý khôi phục",
+    name: "Quản lý tài khoản bị xóa",
     url: "/recovery",
     icon: UserX,
   },

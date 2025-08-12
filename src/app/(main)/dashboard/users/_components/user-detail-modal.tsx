@@ -14,7 +14,7 @@ interface UserDetailModalProps {
 const UserDetailModal = ({ row }: UserDetailModalProps) => {
   const user = row.original;
   const metadata = (user.metadata as Record<string, any>) || {};
-  const phones = (metadata.phones as string[]) || [];
+  const phone = metadata.phone || "-";
 
   return (
     <div className="space-y-6">
@@ -58,17 +58,11 @@ const UserDetailModal = ({ row }: UserDetailModalProps) => {
         </div>
         <div>
           <h3 className="text-sm font-medium text-muted-foreground">
-            Số điện thoại 1
+            Số điện thoại
           </h3>
-          <p className="mt-1">{phones[0] || "-"}</p>
+          <p className="mt-1">{phone}</p>
         </div>
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Số điện thoại 2
-          </h3>
-          <p className="mt-1">{phones[1] || "-"}</p>
-        </div>
-        <div className="col-span-2">
           <h3 className="text-sm font-medium text-muted-foreground">Địa chỉ</h3>
           <p className="mt-1">{metadata.address || "-"}</p>
         </div>

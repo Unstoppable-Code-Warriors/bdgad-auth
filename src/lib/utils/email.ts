@@ -216,30 +216,30 @@ export async function sendDeletionEmail(
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Thông báo tạm khóa tài khoản - BDGAD",
+      subject: "Thông báo xóa tài khoản - BDGAD",
       html: `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Thông báo tạm khóa tài khoản</h2>
-      <p>Kính gửi ${name},</p>
-      <p>Email này thông báo rằng tài khoản của bạn đã bị <strong>tạm khóa</strong> và sẽ bị xóa vĩnh viễn sau 30 ngày nếu không được khôi phục.</p>
-      <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        ${reason ? `<p><strong>Lý do tạm khóa:</strong> ${reason}</p>` : ""}
-        <p><strong>Thông báo quan trọng:</strong> Trong vòng 30 ngày tới, bạn có thể yêu cầu khôi phục tài khoản. Sau thời hạn này, toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn và không thể phục hồi.</p>
-      </div>
-      <p>Nếu bạn cho rằng hành động này là nhầm lẫn hoặc muốn khôi phục tài khoản, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi.</p>
-      <p>Trân trọng,<br>Đội ngũ BDGAD</p>
-    </div>
-  `,
-      text: `Thông báo tạm khóa tài khoản
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Thông báo xóa tài khoản</h2>
+          <p>Kính gửi ${name},</p>
+          <p>Email này thông báo rằng tài khoản của bạn đã bị xóa vĩnh viễn khỏi hệ thống BDGAD.</p>
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            ${reason ? `<p><strong>Lý do xóa:</strong> ${reason}</p>` : ""}
+            <p><strong>Thông báo quan trọng:</strong> Tất cả dữ liệu liên quan đến tài khoản này đã bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.</p>
+          </div>
+          <p>Nếu bạn cho rằng hành động này là nhầm lẫn, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi ngay lập tức.</p>
+          <p>Trân trọng,<br>Đội ngũ BDGAD</p>
+        </div>
+      `,
+      text: `Thông báo xóa tài khoản
 
 Kính gửi ${name},
 
-Email này thông báo rằng tài khoản của bạn đã bị tạm khóa và sẽ bị xóa vĩnh viễn sau 30 ngày nếu không được khôi phục.
+Email này thông báo rằng tài khoản của bạn đã bị xóa vĩnh viễn khỏi hệ thống BDGAD.
 
-${reason ? `Lý do tạm khóa: ${reason}\n` : ""}
-Thông báo quan trọng: Trong vòng 30 ngày tới, bạn có thể yêu cầu khôi phục tài khoản. Sau thời hạn này, toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn và không thể phục hồi.
+${reason ? `Lý do xóa: ${reason}\n` : ""}
+Thông báo quan trọng: Tất cả dữ liệu liên quan đến tài khoản này đã bị xóa vĩnh viễn khỏi hệ thống của chúng tôi.
 
-Nếu bạn cho rằng hành động này là nhầm lẫn hoặc muốn khôi phục tài khoản, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi.
+Nếu bạn cho rằng hành động này là nhầm lẫn, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi ngay lập tức.
 
 Trân trọng,
 Đội ngũ BDGAD`,

@@ -49,7 +49,7 @@ const RecoveryDetailModal = ({ row }: RecoveryDetailModalProps) => {
         </div>
         <div>
           <h3 className="text-sm font-medium text-muted-foreground">
-            Trạng thái trước khi xóa
+            Trạng thái
           </h3>
           <p className="mt-1">
             <Badge

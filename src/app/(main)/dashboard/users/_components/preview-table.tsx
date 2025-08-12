@@ -236,13 +236,12 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
       errors.email = "Định dạng email không hợp lệ";
     }
 
-    // Phone validation (optional)
-    if (row.Phone) {
-      const phone = String(row.Phone).trim();
-
-      if (!phoneError.pattern.test(phone)) {
-        errors.phone = phoneError.message;
-      }
+    // Phone validation (required)
+    const phoneStr = row.Phone ? String(row.Phone) : "";
+    if (!phoneStr.trim()) {
+      errors.phone = "Số điện thoại là bắt buộc";
+    } else if (!phoneError.pattern.test(phoneStr.trim())) {
+      errors.phone = phoneError.message;
     }
 
     // Address validation (optional)
@@ -382,10 +381,16 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
 
     // Check for empty required fields
     const emptyRowsRequired = importedUsers.filter(
-      (user) => !user.name.trim() || !user.email.trim() || !user.roleId
+      (user) =>
+        !user.name.trim() ||
+        !user.email.trim() ||
+        !user.phone.trim() ||
+        !user.roleId
     );
     if (emptyRowsRequired.length > 0) {
-      errors.push("Các trường bắt buộc phải điền (Tên, Email, Vai trò)");
+      errors.push(
+        "Các trường bắt buộc phải điền (Tên, Email, Số điện thoại, Vai trò)"
+      );
     }
 
     // Check account limit
@@ -598,7 +603,9 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
                   <TableHead>
                     Email <span className="text-red-500">*</span>
                   </TableHead>
-                  <TableHead>Số điện thoại</TableHead>
+                  <TableHead>
+                    Số điện thoại <span className="text-red-500">*</span>
+                  </TableHead>
                   <TableHead className="w-[300px]">Địa chỉ</TableHead>
                   <TableHead>
                     Vai trò <span className="text-red-500">*</span>

@@ -69,12 +69,11 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
     header: "Số điện thoại",
     cell: ({ row }) => {
       const metadata = row.original?.metadata as Record<string, any>;
-      const phones = metadata?.phones as string[];
-      const phone1 = phones?.[0] || "-";
+      const phone = metadata?.phone || "-";
 
       return (
-        <div className="max-w-[120px] truncate" title={phone1}>
-          {phone1}
+        <div className="max-w-[120px] truncate" title={phone}>
+          {phone}
         </div>
       );
     },

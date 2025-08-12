@@ -31,7 +31,7 @@ interface UserFormProps {
 }
 
 interface UserMetadata {
-  phones?: string[];
+  phone?: string;
   address?: string;
 }
 
@@ -47,8 +47,7 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
       name: userData?.name || "",
       email: userData?.email || "",
       roleId: userData?.roles?.[0]?.id?.toString() || "",
-      phone1: (userData?.metadata as UserMetadata)?.phones?.[0] || "",
-      phone2: (userData?.metadata as UserMetadata)?.phones?.[1] || "",
+      phone: (userData?.metadata as UserMetadata)?.phone || "",
       address: (userData?.metadata as UserMetadata)?.address || "",
     },
     validate: {
@@ -83,47 +82,19 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         return null;
       },
       roleId: (value: string) => (value ? null : "Vui lòng chọn vai trò"),
-      phone1: (value: string) => {
+      phone: (value: string) => {
         const trimmedValue = value.trim();
-        if (!trimmedValue) return null; // Phone is optional
+        if (!trimmedValue) return "Số điện thoại là bắt buộc";
 
         if (!phoneError.pattern.test(trimmedValue)) {
           return phoneError.message;
-        }
-
-        // Check if phone1 is the same as phone2
-        if (trimmedValue === form.values.phone2.trim() && trimmedValue !== "") {
-          return "Số điện thoại 1 không được trùng với số điện thoại 2";
         }
 
         // Check if phone already exists in the system
         const phoneExists = users.some((user) => {
           if (isUpdateMode && user.id === userData?.id) return false;
           const metadata = user.metadata as UserMetadata;
-          return metadata?.phones?.includes(trimmedValue);
-        });
-        if (phoneExists) return "Số điện thoại đã tồn tại trong hệ thống";
-
-        return null;
-      },
-      phone2: (value: string) => {
-        const trimmedValue = value.trim();
-        if (!trimmedValue) return null; // Phone is optional
-
-        if (!phoneError.pattern.test(trimmedValue)) {
-          return phoneError.message;
-        }
-
-        // Check if phone2 is the same as phone1
-        if (trimmedValue === form.values.phone1.trim() && trimmedValue !== "") {
-          return "Số điện thoại 2 không được trùng với số điện thoại 1";
-        }
-
-        // Check if phone already exists in the system
-        const phoneExists = users.some((user) => {
-          if (isUpdateMode && user.id === userData?.id) return false;
-          const metadata = user.metadata as UserMetadata;
-          return metadata?.phones?.includes(trimmedValue);
+          return metadata?.phone === trimmedValue;
         });
         if (phoneExists) return "Số điện thoại đã tồn tại trong hệ thống";
 
@@ -156,13 +127,8 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
     try {
-      // Create phones array, filtering out empty values
-      const phones = [values.phone1.trim(), values.phone2.trim()].filter(
-        (phone) => phone !== ""
-      );
-
       const metadata: UserMetadata = {
-        phones: phones.length > 0 ? phones : undefined,
+        phone: values.phone.trim() || undefined,
         address: values.address.trim() || undefined,
       };
 
@@ -246,28 +212,16 @@ export function UserForm({ action, row, roles, users }: UserFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="phone1">Số điện thoại 1</Label>
+          <div>
+            Số điện thoại <span className="text-red-500">*</span>
+          </div>
           <Input
-            id="phone1"
+            id="phone"
             placeholder="0393271123"
-            onChange={(e) => form.setFieldValue("phone1", e.target.value)}
-            value={form.values.phone1}
+            {...form.getInputProps("phone")}
           />
-          {form.errors.phone1 && (
-            <div className="text-sm text-red-600">{form.errors.phone1}</div>
-          )}
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="phone2">Số điện thoại 2</Label>
-          <Input
-            id="phone2"
-            placeholder="0393271124"
-            onChange={(e) => form.setFieldValue("phone2", e.target.value)}
-            value={form.values.phone2}
-          />
-          {form.errors.phone2 && (
-            <div className="text-sm text-red-600">{form.errors.phone2}</div>
+          {form.errors.phone && (
+            <div className="text-sm text-red-600">{form.errors.phone}</div>
           )}
         </div>
 

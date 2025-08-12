@@ -5,7 +5,7 @@ import { DataTable } from "@/components/ui/datatable";
 import { GetDeletedUsersResult } from "@/lib/actions/users";
 import { userRole, userStatus } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Eye, RotateCcw } from "lucide-react";
+import { Eye, RotateCcw, Trash2 } from "lucide-react";
 import { useDialog } from "@/hooks/use-dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { AlertCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import RecoveryDetailModal from "./recovery-detail-modal";
 import ConfirmRecovery from "./confirm-recovery";
+import ConfirmPermanentDelete from "./confirm-permanent-delete";
 
 // Calculate expiry date function
 const calculateExpiryDate = (deletedAt: string | Date) => {
@@ -50,10 +51,18 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <div className="max-w-[180px] truncate" title={row.original.email}>
-        {row.original.email}
-      </div>
+      <div title={row.original.email}>{row.original.email}</div>
     ),
+  },
+  {
+    accessorKey: "phone",
+    header: "Số điện thoại",
+    cell: ({ row }) => {
+      const metadata = row.original?.metadata as Record<string, any>;
+      const phone = metadata?.phone || "-";
+
+      return <div title={phone}>{phone}</div>;
+    },
   },
   {
     accessorKey: "deletedAt",
@@ -61,16 +70,14 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
     cell: ({ row }) => {
       return (
         <div>
-          <div className="max-w-[120px]">
-            {formatDate(new Date(row.original.deletedAt!))}
-          </div>
+          <div>{formatDate(new Date(row.original.deletedAt!))}</div>
         </div>
       );
     },
   },
   {
     accessorKey: "expiryDate",
-    header: "Ngày hết hạn",
+    header: "Ngày hết hạn khôi phục",
     cell: ({ row }) => {
       const expiryDate = calculateExpiryDate(row.original.deletedAt!);
 
@@ -106,6 +113,18 @@ const ActionsMenu = ({
     });
   };
 
+  const openConfirmPermanentDeleteDialog = () => {
+    dialog.open({
+      title: "Xóa vĩnh viễn tài khoản",
+      children: (
+        <ConfirmPermanentDelete
+          row={row}
+          closeModal={() => dialog.closeAll()}
+        />
+      ),
+    });
+  };
+
   return (
     <>
       <DropdownMenuItem onClick={openRecoveryDetailModal}>
@@ -118,6 +137,12 @@ const ActionsMenu = ({
         <div className="flex items-center gap-1">
           <RotateCcw className="mr-2 h-4 w-4" />
           Khôi phục tài khoản
+        </div>
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={openConfirmPermanentDeleteDialog}>
+        <div className="flex items-center gap-1">
+          <Trash2 className="mr-2 h-4 w-4 text-red-500" />
+          <span className="text-red-500">Xóa vĩnh viễn</span>
         </div>
       </DropdownMenuItem>
     </>
@@ -201,7 +226,7 @@ export function RecoveryTable() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Quản lý khôi phục tài khoản
+            Quản lý tài khoản bị xóa
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             Quản lý các tài khoản đã bị xóa và có thể khôi phục trong vòng 30

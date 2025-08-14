@@ -232,8 +232,12 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     const emailStr = row.Email ? String(row.Email) : "";
     if (!emailStr.trim()) {
       errors.email = "Email là bắt buộc";
-    } else if (!/^\S+@\S+$/.test(emailStr.trim())) {
-      errors.email = "Định dạng email không hợp lệ";
+    } else {
+      const trimmedEmail = emailStr.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        errors.email = "Định dạng email không hợp lệ";
+      }
     }
 
     // Phone validation (required)
@@ -384,7 +388,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
       (user) =>
         !user.name.trim() ||
         !user.email.trim() ||
-        !user.phone.trim() ||
+        !String(user.phone).trim() ||
         !user.roleId
     );
     if (emptyRowsRequired.length > 0) {
@@ -448,7 +452,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
     phoneMap.forEach((rows, phone) => {
       if (rows.length > 1) {
         errors.push(
-          `Sế điện thoại trùng lặp trong các dòng: ${rows
+          `Số điện thoại trùng lặp trong các dòng: ${rows
             .sort((a, b) => a - b)
             .join(", ")}`
         );
@@ -554,9 +558,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  if (handleCheck()) {
-                    toast.success("Tất cả dữ liệu đều hợp lệ");
-                  }
+                  handleCheck();
                 }}
                 disabled={isLoading}
               >
@@ -656,7 +658,7 @@ export function PreviewTable({ roles, users }: PreviewTableProps) {
                     <TableCell>
                       <div className="space-y-1">
                         <Input
-                          value={user.phone}
+                          value={String(user.phone)}
                           onChange={(e) =>
                             handleCellChange(user.id, "phone", e.target.value)
                           }

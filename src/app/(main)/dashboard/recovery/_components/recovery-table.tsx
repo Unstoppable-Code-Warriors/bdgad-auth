@@ -51,7 +51,9 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
     accessorKey: "email",
     header: "Email",
     cell: ({ row }) => (
-      <div title={row.original.email}>{row.original.email}</div>
+      <div className="w-[160px] truncate" title={row.original.email}>
+        {row.original.email}
+      </div>
     ),
   },
   {
@@ -62,6 +64,22 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
       const phone = metadata?.phone || "-";
 
       return <div>{phone}</div>;
+    },
+  },
+  {
+    accessorKey: "roles",
+    header: "Vai trò",
+    cell: ({ row }) => {
+      const roles = row.original.roles || [];
+      return (
+        <div className="flex flex-wrap gap-1">
+          {roles.map((role) => (
+            <Badge key={role.id} variant="default">
+              {userRole[role.name]}
+            </Badge>
+          ))}
+        </div>
+      );
     },
   },
   {

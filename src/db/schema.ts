@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),
+  permanentlyDeletedAt: timestamp("permanently_delete_at"),
   status: varchar("status", { length: 255 }).notNull().default("active"),
 });
 

@@ -61,7 +61,7 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
       const metadata = row.original?.metadata as Record<string, any>;
       const phone = metadata?.phone || "-";
 
-      return <div title={phone}>{phone}</div>;
+      return <div>{phone}</div>;
     },
   },
   {
@@ -69,9 +69,7 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
     header: "Ngày xóa",
     cell: ({ row }) => {
       return (
-        <div>
-          <div>{formatDate(new Date(row.original.deletedAt!))}</div>
-        </div>
+        <div>{new Date(row.original.deletedAt!).toLocaleDateString()}</div>
       );
     },
   },
@@ -81,11 +79,7 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
     cell: ({ row }) => {
       const expiryDate = calculateExpiryDate(row.original.deletedAt!);
 
-      return (
-        <div className="flex flex-col items-start">
-          <div className="text-sm">{formatDate(expiryDate)}</div>
-        </div>
-      );
+      return <div>{expiryDate.toLocaleDateString()}</div>;
     },
   },
 ];
@@ -218,7 +212,13 @@ export function RecoveryTable() {
     );
   }
 
-  const users = deletedUsersData?.users || [];
+  const users =
+    deletedUsersData?.users.filter(
+      (user) =>
+        user.deletedAt &&
+        !user.permanentlyDeletedAt &&
+        user.status === "inactive"
+    ) || [];
   const total = deletedUsersData?.total || 0;
 
   return (

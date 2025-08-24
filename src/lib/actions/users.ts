@@ -968,27 +968,33 @@ async function permanentDeleteUserCore({ id }: { id: number }) {
     const userToDelete = await db
       .select()
       .from(users)
-      .where(and(eq(users.id, id), not(isNull(users.deletedAt))))
+      .where(
+        and(
+          eq(users.id, id),
+          not(isNull(users.deletedAt)),
+          isNull(users.permanentlyDeletedAt)
+        )
+      )
       .limit(1);
 
     if (userToDelete.length === 0) {
-      throw new Error(`User with ID ${id} does not exist or is not deleted`);
+      throw new Error(
+        `User with ID ${id} does not exist, is not deleted, or is already permanently deleted`
+      );
     }
 
     await db.transaction(async (tx) => {
-      // Delete user roles first (foreign key constraint)
-      await tx.delete(userRoles).where(eq(userRoles.userId, id));
-
-      // Delete any password reset tokens
+      // Mark user as permanently deleted by setting permanentlyDeletedAt = now
       await tx
-        .delete(passwordResetTokens)
-        .where(eq(passwordResetTokens.userId, id));
-
-      // Permanently delete user from database
-      await tx.delete(users).where(eq(users.id, id));
+        .update(users)
+        .set({
+          permanentlyDeletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, id));
     });
 
-    console.log(`User with ID ${id} permanently deleted from database`);
+    console.log(`User with ID ${id} marked as permanently deleted`);
   } catch (error) {
     console.error("Error in permanentDeleteUserCore:", error);
     throw error; // Re-throw the error to be handled by the caller

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createRole, updateRole, GetRolesResult } from "@/lib/actions/roles"
+import { userRole } from "@/lib/constants"
 import { useForm } from "@mantine/form"
 import { useDialog } from "@/hooks/use-dialog"
 import { useState, useEffect } from "react"
@@ -30,7 +31,7 @@ const RoleForm = ({
 	const form = useForm({
 		mode: "uncontrolled",
 		initialValues: {
-			name: roleData?.name || "",
+			name: roleData?.name ? (userRole[roleData.name] || roleData.name) : "",
 			description: roleData?.description || "",
 		},
 
@@ -59,7 +60,7 @@ const RoleForm = ({
 	useEffect(() => {
 		if (isUpdateMode && roleData) {
 			form.setValues({
-				name: roleData.name,
+				name: userRole[roleData.name] || roleData.name,
 				description: roleData.description,
 			})
 		}

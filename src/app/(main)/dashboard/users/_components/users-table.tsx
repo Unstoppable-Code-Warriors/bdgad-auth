@@ -15,10 +15,11 @@ import {
   FileUp,
   LockOpen,
   Search,
+  MoreHorizontal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDialog } from "@/hooks/use-dialog";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu";
 import ConfirmDeleteUser from "./confirm-delete";
 import { getRoles, GetRolesResult } from "@/lib/actions/roles";
 import UserForm from "./user-form";
@@ -102,6 +103,14 @@ const columns: ColumnDef<GetUsersResult["users"][0]>[] = [
         {userStatus[row.original.status]}
       </Badge>
     ),
+  },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => <ActionsMenu row={row} roles={[]} users={[]} />,
+    size: 50,
+    enableSorting: false,
+    enableHiding: false,
   },
 ];
 
@@ -196,50 +205,58 @@ const ActionsMenu = ({
   };
 
   return (
-    <>
-      <DropdownMenuItem onClick={openUserDetailModal}>
-        <div className="flex items-center gap-1">
-          <Eye className="mr-2 h-4 w-4" />
-          Xem chi tiết
-        </div>
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        disabled={row.original.status === "inactive"}
-        onClick={openEditUserModal}
-      >
-        <div className="flex items-center gap-1">
-          <Pencil className="mr-2 h-4 w-4" />
-          Cập nhật
-        </div>
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        disabled={row.original.status === "inactive"}
-        onClick={openConfirmResetPasswordDialog}
-      >
-        <div className="flex items-center gap-1">
-          <Lock className="mr-2 h-4 w-4" />
-          Đặt lại mật khẩu
-        </div>
-      </DropdownMenuItem>
-      {row.original.status === "active" ? (
-        <DropdownMenuItem onClick={openBanUserDialog}>
-          <Ban className="mr-2 h-4 w-4" />
-          Tạm ngừng tài khoản
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Mở menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={openUserDetailModal}>
+          <div className="flex items-center gap-1">
+            <Eye className="mr-2 h-4 w-4" />
+            Xem chi tiết
+          </div>
         </DropdownMenuItem>
-      ) : (
-        <DropdownMenuItem onClick={openBanUserDialog}>
-          <LockOpen className="mr-2 h-4 w-4" />
-          Bỏ tạm ngừng tài khoản
+        <DropdownMenuItem
+          disabled={row.original.status === "inactive"}
+          onClick={openEditUserModal}
+        >
+          <div className="flex items-center gap-1">
+            <Pencil className="mr-2 h-4 w-4" />
+            Cập nhật
+          </div>
         </DropdownMenuItem>
-      )}
-      <DropdownMenuItem
-        onClick={openConfirmDeleteDialog}
-        disabled={row.original.status === "active"}
-      >
-        <Trash2 className="mr-2 h-4 w-4" />
-        Xóa tài khoản
-      </DropdownMenuItem>
-    </>
+        <DropdownMenuItem
+          disabled={row.original.status === "inactive"}
+          onClick={openConfirmResetPasswordDialog}
+        >
+          <div className="flex items-center gap-1">
+            <Lock className="mr-2 h-4 w-4" />
+            Đặt lại mật khẩu
+          </div>
+        </DropdownMenuItem>
+        {row.original.status === "active" ? (
+          <DropdownMenuItem onClick={openBanUserDialog}>
+            <Ban className="mr-2 h-4 w-4" />
+            Tạm ngừng tài khoản
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={openBanUserDialog}>
+            <LockOpen className="mr-2 h-4 w-4" />
+            Bỏ tạm ngừng tài khoản
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          onClick={openConfirmDeleteDialog}
+          disabled={row.original.status === "active"}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Xóa tài khoản
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
@@ -309,6 +326,25 @@ export function UsersTable() {
     queryKey: ["roles"],
     queryFn: () => getRoles(),
   });
+
+  // Create columns with proper context
+  const columnsWithContext: ColumnDef<GetUsersResult["users"][0]>[] = [
+    ...columns.slice(0, -1), // All columns except the actions column
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <ActionsMenu
+          row={row}
+          roles={rolesData?.roles || []}
+          users={allUsersData?.users || []}
+        />
+      ),
+      size: 50,
+      enableSorting: false,
+      enableHiding: false,
+    },
+  ];
 
   // Get current tab's role code
   const currentRoleCode =
@@ -429,7 +465,7 @@ export function UsersTable() {
           <TabsContent key={tab.key} value={tab.key}>
             <div className="space-y-4">
               <DataTable
-                columns={columns}
+                columns={columnsWithContext}
                 data={currentUsers}
                 total={totalUsers}
                 page={globalPage}
@@ -438,15 +474,7 @@ export function UsersTable() {
                 onPageSizeChange={handleGlobalPageSizeChange}
                 enableFiltering={false}
                 enableColumnVisibility={false} // Disable DataTable's internal search since we're using global search
-                rowActions={(row) => (
-                  <ActionsMenu
-                    row={row}
-                    roles={rolesData?.roles || []}
-                    users={allUsers}
-                  />
-                )}
                 requiredColumns={["name", "email", "roles"]}
-                actionsColumnWidth={40}
               />
               {isLoadingCurrentUsers && (
                 <div className="flex items-center justify-center p-4">

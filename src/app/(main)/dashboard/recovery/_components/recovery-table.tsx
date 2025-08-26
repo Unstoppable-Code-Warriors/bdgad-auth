@@ -5,9 +5,9 @@ import { DataTable } from "@/components/ui/datatable";
 import { GetDeletedUsersResult } from "@/lib/actions/users";
 import { userRole, userStatus } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Eye, RotateCcw, Trash2 } from "lucide-react";
+import { Eye, RotateCcw, Trash2, MoreHorizontal } from "lucide-react";
 import { useDialog } from "@/hooks/use-dialog";
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -100,6 +100,14 @@ const columns: ColumnDef<GetDeletedUsersResult["users"][0]>[] = [
       return <div>{expiryDate.toLocaleDateString()}</div>;
     },
   },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => <ActionsMenu row={row} />,
+    size: 50,
+    enableSorting: false,
+    enableHiding: false,
+  },
 ];
 
 const ActionsMenu = ({
@@ -138,26 +146,34 @@ const ActionsMenu = ({
   };
 
   return (
-    <>
-      <DropdownMenuItem onClick={openRecoveryDetailModal}>
-        <div className="flex items-center gap-1">
-          <Eye className="mr-2 h-4 w-4" />
-          Xem chi tiết
-        </div>
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={openConfirmRecoveryDialog}>
-        <div className="flex items-center gap-1">
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Khôi phục tài khoản
-        </div>
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={openConfirmPermanentDeleteDialog}>
-        <div className="flex items-center gap-1">
-          <Trash2 className="mr-2 h-4 w-4 text-red-500" />
-          <span className="text-red-500">Xóa vĩnh viễn</span>
-        </div>
-      </DropdownMenuItem>
-    </>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Mở menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={openRecoveryDetailModal}>
+          <div className="flex items-center gap-1">
+            <Eye className="mr-2 h-4 w-4" />
+            Xem chi tiết
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={openConfirmRecoveryDialog}>
+          <div className="flex items-center gap-1">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Khôi phục tài khoản
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={openConfirmPermanentDeleteDialog}>
+          <div className="flex items-center gap-1">
+            <Trash2 className="mr-2 h-4 w-4 text-red-500" />
+            <span className="text-red-500">Xóa vĩnh viễn</span>
+          </div>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
@@ -269,7 +285,6 @@ export function RecoveryTable() {
         enableColumnVisibility={false}
         onSearch={handleSearch}
         searchValue={search}
-        rowActions={(row) => <ActionsMenu row={row} />}
         requiredColumns={["name", "email", "deletedAt"]}
       />
       {isLoadingUsers && (

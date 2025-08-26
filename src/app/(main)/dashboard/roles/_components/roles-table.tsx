@@ -1,55 +1,56 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { createHeader, DataTable } from "@/components/ui/datatable";
 import { GetRolesResult } from "@/lib/actions/roles";
 import { FetchLimit, userRole } from "@/lib/constants";
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
 import { useDialog } from "@/hooks/use-dialog";
-import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuContent } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal } from "lucide-react";
 import RoleForm from "./role-form";
 import { Label } from "@/components/ui/label";
 
 const columns: ColumnDef<GetRolesResult["roles"][0]>[] = [
   {
-    accessorKey: "name",
-    header: createHeader("Tên"),
+    id: "stt",
+    header: createHeader("STT"),
     cell: ({ row }) => (
-      <div title={row.original.name}>{userRole[row.original.name]}</div>
+      <div className="text-center font-medium">
+        {row.index + 1}
+      </div>
+    ),
+    size: 60,
+  },
+  {
+    accessorKey: "name",
+    header: createHeader("Vai trò"),
+    cell: ({ row }) => (
+      <div title={userRole[row.original.name] || row.original.name}>
+        {userRole[row.original.name] || row.original.name}
+      </div>
     ),
   },
   {
     accessorKey: "description",
     header: createHeader("Mô tả"),
     cell: ({ row }) => (
-      <div className="max-w-[600px] truncate" title={row.original.description}>
+      <div className="max-w-[550px] truncate" title={row.original.description}>
         {row.original.description}
       </div>
     ),
+    size: 200,
+  },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => <ActionsMenu row={row} />,
+    size: 50,
+    enableSorting: false,
+    enableHiding: false,
   },
 ];
 
-const RolesActions = () => {
-  const dialog = useDialog();
-
-  const openAddRoleModal = () => {
-    dialog.open({
-      title: "Thêm vai trò mới",
-      children: <RoleForm action="create" />,
-      size: "md",
-    });
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      <Button variant="outline" onClick={openAddRoleModal}>
-        <Plus className="h-4 w-4 mr-2" />
-        Add New
-      </Button>
-    </div>
-  );
-};
 
 const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
   const dialog = useDialog();
@@ -67,8 +68,8 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
       children: (
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Tên</Label>
-            <div className="text-sm">{row.original.name}</div>
+            <Label>Vai trò</Label>
+            <div className="text-sm">{userRole[row.original.name]}</div>
           </div>
           <div className="grid gap-2">
             <Label>Mô tả</Label>
@@ -83,12 +84,20 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuItem onClick={openViewDetailModal}>
-        Xem chi tiết
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={openEditRoleModal}>
-        Cập nhật mô tả
-      </DropdownMenuItem>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Mở menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={openViewDetailModal}>
+          Xem chi tiết
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={openEditRoleModal}>
+          Cập nhật mô tả
+        </DropdownMenuItem>
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 };
@@ -106,7 +115,6 @@ const RolesTable = ({
       requiredColumns={["name"]}
       // actions={<RolesActions />}
       enableColumnVisibility={false}
-      rowActions={(row) => <ActionsMenu row={row} />}
     />
   );
 };

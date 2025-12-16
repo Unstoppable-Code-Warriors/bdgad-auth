@@ -92,7 +92,7 @@ const ActionsMenu = ({ row }: { row: Row<GetRolesResult["roles"][0]> }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={openViewDetailModal}>
-          Xem chi tiết
+          Xem chi tiếtt
         </DropdownMenuItem>
         <DropdownMenuItem onClick={openEditRoleModal}>
           Cập nhật mô tả

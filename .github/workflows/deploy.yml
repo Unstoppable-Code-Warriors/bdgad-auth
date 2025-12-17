@@ -139,7 +139,7 @@ jobs:
                       docker run -d \
                         --name $CONTAINER_NAME \
                         --restart unless-stopped \
-                        -p 3000:3000 \
+                        -p ${PORT}:3000 \
                         --env-file $VM_ENV_PATH \
                         $DOCKER_IMAGE
 
@@ -174,4 +174,5 @@ jobs:
                   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
                   DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
                   VM_ENV_PATH: ${{ secrets.VM_ENV_PATH }}
+
 

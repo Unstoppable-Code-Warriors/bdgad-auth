@@ -99,10 +99,6 @@ The pipeline runs on:
 2. **SSH connection fails**: Verify VM credentials and network accessibility
 3. **Docker pull fails**: Check Docker Hub credentials and image permissions
 4. **Container fails to start**: Check environment file path and content on VM
-
-### Debugging
-
--   Check the Actions tab in your GitHub repository for detailed logs
 -   SSH into your VM to check Docker logs: `docker logs bdgad-auth`
 -   Verify environment file exists and has correct permissions on VM
 
@@ -112,3 +108,4 @@ The pipeline runs on:
 -   Use GitHub's encrypted secrets for all sensitive data
 -   Regularly rotate access tokens and SSH keys
 -   Ensure your VM has proper firewall rules configured
+

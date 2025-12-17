@@ -97,7 +97,7 @@ jobs:
                   username: ${{ secrets.VM_USER }}
                   key: ${{ secrets.VM_PRIVATE_KEY }}
                   port: 22
-                  envs: DOCKER_IMAGE_NAME,DOCKER_HUB_USERNAME,DOCKER_HUB_ACCESS_TOKEN,VM_ENV_PATH
+                  envs: DOCKER_IMAGE_NAME,DOCKER_HUB_USERNAME,DOCKER_HUB_ACCESS_TOKEN,VM_ENV_PATH,PORT
                   script: |
                       set -e  # Exit on any error
 
@@ -174,5 +174,7 @@ jobs:
                   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
                   DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
                   VM_ENV_PATH: ${{ secrets.VM_ENV_PATH }}
+                  PORT: ${{ secrets.PORT }}
+
 
 

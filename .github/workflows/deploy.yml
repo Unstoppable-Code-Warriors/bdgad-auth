@@ -122,21 +122,21 @@ jobs:
 
                       # Pull the latest image
                       echo "📥 Pulling latest image..."
-                      docker pull $DOCKER_IMAGE
+                      sudo docker pull $DOCKER_IMAGE
 
                       # Stop and remove existing container if it exists
                       if docker ps -q -f name="^${CONTAINER_NAME}$" | grep -q .; then
                           echo "🛑 Stopping existing container..."
-                          docker stop $CONTAINER_NAME
-                          docker rm $CONTAINER_NAME
+                          sudo docker stop $CONTAINER_NAME
+                          sudo docker rm $CONTAINER_NAME
                       elif docker ps -aq -f name="^${CONTAINER_NAME}$" | grep -q .; then
                           echo "🗑️ Removing stopped container..."
-                          docker rm $CONTAINER_NAME
+                          sudo docker rm $CONTAINER_NAME
                       fi
 
                       # Run new container
                       echo "🚀 Starting new container..."
-                      docker run -d \
+                      sudo docker run -d \
                         --name $CONTAINER_NAME \
                         --restart unless-stopped \
                         -p ${PORT}:3000 \
@@ -147,14 +147,14 @@ jobs:
                       echo "⏳ Waiting for container to start..."
                       sleep 10
 
-                      if docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+                      if sudo docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
                           echo "✅ Deployment successful! Container is running."
                           echo "📋 Recent logs:"
                           docker logs --tail 20 $CONTAINER_NAME
                       else
                           echo "❌ Deployment failed! Container is not running."
                           echo "📋 Error logs:"
-                          docker logs --tail 50 $CONTAINER_NAME
+                          sudo docker logs --tail 50 $CONTAINER_NAME
                           exit 1
                       fi
 
@@ -166,7 +166,7 @@ jobs:
                       fi
 
                       # General cleanup
-                      docker system prune -f > /dev/null 2>&1 || true
+                      sudo docker system prune -f > /dev/null 2>&1 || true
 
                       echo "🎉 Deployment completed successfully!"
               env:
@@ -175,6 +175,7 @@ jobs:
                   DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
                   VM_ENV_PATH: ${{ secrets.VM_ENV_PATH }}
                   PORT: ${{ secrets.PORT }}
+
 
 
 

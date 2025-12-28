@@ -20,7 +20,7 @@ EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-app-password-here
 
 # Frontend URL (for password reset links)
-AUTH_URL=http://localhost:3000
+AUTH_URL=http://localhost:3001
 ```
 
 ### Email Configuration Notes

@@ -111,25 +111,25 @@ jobs:
                       echo "Env Path: $VM_ENV_PATH"
 
                       # Check if Docker is running
-                      if ! docker info > /dev/null 2>&1; then
+                      if ! sudo docker info > /dev/null 2>&1; then
                           echo "❌ Docker is not running or not accessible"
                           exit 1
                       fi
 
                       # Login to Docker Hub
                       echo "🔐 Logging into Docker Hub..."
-                      echo "$DOCKER_HUB_ACCESS_TOKEN" | docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
+                      echo "$DOCKER_HUB_ACCESS_TOKEN" | sudo docker login -u "$DOCKER_HUB_USERNAME" --password-stdin
 
                       # Pull the latest image
                       echo "📥 Pulling latest image..."
                       sudo docker pull $DOCKER_IMAGE
 
                       # Stop and remove existing container if it exists
-                      if docker ps -q -f name="^${CONTAINER_NAME}$" | grep -q .; then
+                      if sudo docker ps -q -f name="^${CONTAINER_NAME}$" | grep -q .; then
                           echo "🛑 Stopping existing container..."
                           sudo docker stop $CONTAINER_NAME
                           sudo docker rm $CONTAINER_NAME
-                      elif docker ps -aq -f name="^${CONTAINER_NAME}$" | grep -q .; then
+                      elif sudo docker ps -aq -f name="^${CONTAINER_NAME}$" | grep -q .; then
                           echo "🗑️ Removing stopped container..."
                           sudo docker rm $CONTAINER_NAME
                       fi
@@ -150,7 +150,7 @@ jobs:
                       if sudo docker ps --filter "name=^${CONTAINER_NAME}$" --filter "status=running" --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
                           echo "✅ Deployment successful! Container is running."
                           echo "📋 Recent logs:"
-                          docker logs --tail 20 $CONTAINER_NAME
+                          sudo docker logs --tail 20 $CONTAINER_NAME
                       else
                           echo "❌ Deployment failed! Container is not running."
                           echo "📋 Error logs:"
@@ -162,7 +162,7 @@ jobs:
                       echo "🧹 Cleaning up old images..."
                       OLD_IMAGES=$(docker images "${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}" --format "{{.ID}}" | tail -n +4)
                       if [ ! -z "$OLD_IMAGES" ]; then
-                          echo $OLD_IMAGES | xargs docker rmi || true
+                          sudo docker rmi $OLD_IMAGES || true
                       fi
 
                       # General cleanup
@@ -175,6 +175,7 @@ jobs:
                   DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
                   VM_ENV_PATH: ${{ secrets.VM_ENV_PATH }}
                   PORT: ${{ secrets.PORT }}
+
 
 
 
